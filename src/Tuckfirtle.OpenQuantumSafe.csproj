@@ -14,7 +14,7 @@
     <PackageProjectUrl>https://github.com/tuckfirtle/Tuckfirtle.OpenQuantumSafe</PackageProjectUrl>
     <RepositoryUrl>https://github.com/tuckfirtle/Tuckfirtle.OpenQuantumSafe</RepositoryUrl>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>Debug_linux;Release_linux;Debug_osx;Release_osx;Debug_Win;Release_Win</Configurations>
+    <Configurations>Debug_linux;Release_linux;Debug_osx;Release_osx;Debug_win;Release_win</Configurations>
     <Platforms>arm;x64;x86</Platforms>
   </PropertyGroup>
 
@@ -36,13 +36,13 @@
     </None>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Win|x64' OR '$(Configuration)|$(Platform)'=='Release_Win|x64'">
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug_win|x64' OR '$(Configuration)|$(Platform)'=='Release_win|x64'">
     <None Include="..\include\net-core-win-x64\liboqs.dll" Link="liboqs.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Win|x86' OR '$(Configuration)|$(Platform)'=='Release_Win|x86'">
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug_win|x86' OR '$(Configuration)|$(Platform)'=='Release_win|x86'">
     <None Include="..\include\net-core-win-x86\liboqs.dll" Link="liboqs.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
