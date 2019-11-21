@@ -4,15 +4,15 @@ namespace Tuckfirtle.OpenQuantumSafe
 {
     public abstract class Mechanism : IDisposable
     {
-        public string AlgorithmName { get; protected set; }
+        public abstract string AlgorithmName { get; }
 
-        public string AlgorithmVersion { get; protected set; }
+        public abstract string AlgorithmVersion { get; }
 
-        public byte ClaimedNistLevel { get; protected set; }
+        public abstract byte ClaimedNistLevel { get; }
 
-        public int PublicKeyLength { get; protected set; }
+        public abstract ulong PublicKeyLength { get; }
 
-        public int SecretKeyLength { get; protected set; }
+        public abstract ulong SecretKeyLength { get; }
 
         protected IntPtr MechanismPtr { get; set; }
 

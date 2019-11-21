@@ -8,15 +8,57 @@ namespace Tuckfirtle.OpenQuantumSafe
 {
     public class KeyEncapsulationMechanism : Mechanism
     {
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        private struct OQS_KEM
+        {
+            public readonly IntPtr method_name;
+
+            public readonly IntPtr alg_version;
+
+            public readonly byte claimed_nist_level;
+
+            public readonly bool ind_cca;
+
+            public readonly UIntPtr length_public_key;
+
+            public readonly UIntPtr length_secret_key;
+
+            public readonly UIntPtr length_ciphertext;
+
+            public readonly UIntPtr length_shared_secret;
+
+            public readonly keypair_delegate keypair;
+
+            public readonly encaps_delegate encaps;
+
+            public readonly decaps_delegate decaps;
+
+            public delegate IntPtr keypair_delegate(byte[] public_key, byte[] secret_key);
+
+            public delegate IntPtr encaps_delegate(byte[] ciphertext, byte[] shared_secret, byte[] public_key);
+
+            public delegate IntPtr decaps_delegate(byte[] shared_secret, byte[] ciphertext, byte[] secret_key);
+        }
+
         public static IReadOnlyList<string> SupportedMechanism { get; }
 
         public static IReadOnlyList<string> EnabledMechanism { get; }
 
+        public override string AlgorithmName { get; }
+
+        public override string AlgorithmVersion { get; }
+
+        public override byte ClaimedNistLevel => Mechanism.claimed_nist_level;
+
         public bool IsIndCca => Mechanism.ind_cca;
 
-        public int CipherTextLength => (int) Mechanism.length_ciphertext.ToUInt64();
+        public override ulong PublicKeyLength => Mechanism.length_public_key.ToUInt64();
 
-        public int SharedSecretLength => (int) Mechanism.length_shared_secret.ToUInt64();
+        public override ulong SecretKeyLength => Mechanism.length_secret_key.ToUInt64();
+
+        public ulong CipherTextLength => Mechanism.length_ciphertext.ToUInt64();
+
+        public ulong SharedSecretLength => Mechanism.length_shared_secret.ToUInt64();
 
         private OQS_KEM Mechanism { get; }
 
@@ -29,7 +71,7 @@ namespace Tuckfirtle.OpenQuantumSafe
 
             for (var i = 0; i < mechanismCount; i++)
             {
-                var mechanismName = Marshal.PtrToStringAnsi(OQS_KEM_alg_identifier(new UIntPtr((uint) i)));
+                var mechanismName = Marshal.PtrToStringAnsi(OQS_KEM_alg_identifier(new UIntPtr(Convert.ToUInt32(i))));
                 supportedMechanism.Add(mechanismName);
 
                 if (OQS_KEM_alg_is_enabled(mechanismName) == 1)
@@ -57,9 +99,6 @@ namespace Tuckfirtle.OpenQuantumSafe
 
             AlgorithmName = Marshal.PtrToStringAnsi(Mechanism.method_name);
             AlgorithmVersion = Marshal.PtrToStringAnsi(Mechanism.alg_version);
-            ClaimedNistLevel = Mechanism.claimed_nist_level;
-            PublicKeyLength = (int) Mechanism.length_public_key.ToUInt64();
-            SecretKeyLength = (int) Mechanism.length_secret_key.ToUInt64();
         }
 
         [DllImport("liboqs", CallingConvention = CallingConvention.Cdecl)]
@@ -121,38 +160,6 @@ namespace Tuckfirtle.OpenQuantumSafe
         protected override void Free(IntPtr mechanismPtr)
         {
             OQS_KEM_free(mechanismPtr);
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-        private struct OQS_KEM
-        {
-            public readonly IntPtr method_name;
-
-            public readonly IntPtr alg_version;
-
-            public readonly byte claimed_nist_level;
-
-            public readonly bool ind_cca;
-
-            public readonly UIntPtr length_public_key;
-
-            public readonly UIntPtr length_secret_key;
-
-            public readonly UIntPtr length_ciphertext;
-
-            public readonly UIntPtr length_shared_secret;
-
-            public readonly keypair_delegate keypair;
-
-            public readonly encaps_delegate encaps;
-
-            public readonly decaps_delegate decaps;
-
-            public delegate IntPtr keypair_delegate(byte[] public_key, byte[] secret_key);
-
-            public delegate IntPtr encaps_delegate(byte[] ciphertext, byte[] shared_secret, byte[] public_key);
-
-            public delegate IntPtr decaps_delegate(byte[] shared_secret, byte[] ciphertext, byte[] secret_key);
         }
     }
 }

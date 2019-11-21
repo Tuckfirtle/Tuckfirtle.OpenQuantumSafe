@@ -8,13 +8,53 @@ namespace Tuckfirtle.OpenQuantumSafe
 {
     public class Signature : Mechanism
     {
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        private struct OQS_SIG
+        {
+            public readonly IntPtr method_name;
+
+            public readonly IntPtr alg_version;
+
+            public readonly byte claimed_nist_level;
+
+            public readonly bool euf_cma;
+
+            public readonly UIntPtr length_public_key;
+
+            public readonly UIntPtr length_secret_key;
+
+            public readonly UIntPtr length_signature;
+
+            public readonly keypair_delegate keypair;
+
+            public readonly sign_delegate sign;
+
+            public readonly verify_delegate verify;
+
+            public delegate IntPtr keypair_delegate(byte[] public_key, byte[] secret_key);
+
+            public delegate IntPtr sign_delegate(byte[] signature, ref UIntPtr signature_len, byte[] message, UIntPtr message_len, byte[] secret_key);
+
+            public delegate IntPtr verify_delegate(byte[] message, UIntPtr message_len, byte[] signature, UIntPtr signature_len, byte[] public_key);
+        }
+
         public static IReadOnlyList<string> SupportedMechanism { get; }
 
         public static IReadOnlyList<string> EnabledMechanism { get; }
 
+        public override string AlgorithmName { get; }
+
+        public override string AlgorithmVersion { get; }
+
+        public override byte ClaimedNistLevel => Mechanism.claimed_nist_level;
+
         public bool IsEufCma => Mechanism.euf_cma;
 
-        public int SignatureLength => (int) Mechanism.length_signature.ToUInt64();
+        public override ulong PublicKeyLength => Mechanism.length_public_key.ToUInt64();
+
+        public override ulong SecretKeyLength => Mechanism.length_secret_key.ToUInt64();
+
+        public ulong SignatureLength => Mechanism.length_signature.ToUInt64();
 
         private OQS_SIG Mechanism { get; }
 
@@ -55,9 +95,6 @@ namespace Tuckfirtle.OpenQuantumSafe
 
             AlgorithmName = Marshal.PtrToStringAnsi(Mechanism.method_name);
             AlgorithmVersion = Marshal.PtrToStringAnsi(Mechanism.alg_version);
-            ClaimedNistLevel = Mechanism.claimed_nist_level;
-            PublicKeyLength = (int) Mechanism.length_public_key.ToUInt64();
-            SecretKeyLength = (int) Mechanism.length_secret_key.ToUInt64();
         }
 
         [DllImport("liboqs", CallingConvention = CallingConvention.Cdecl)]
@@ -91,35 +128,45 @@ namespace Tuckfirtle.OpenQuantumSafe
 
         public void Sign(out byte[] signature, in byte[] message, in byte[] secretKey)
         {
-            Sign(out signature, message, message.Length, secretKey);
+            Sign(out signature, message, Convert.ToUInt64(message.Length), secretKey);
         }
 
-        public void Sign(out byte[] signature, in byte[] message, in int messageLength, in byte[] secretKey)
+        public void Sign(out byte[] signature, in byte[] message, in ulong messageLength, in byte[] secretKey)
         {
             if (MechanismPtr == IntPtr.Zero)
                 throw new ObjectDisposedException(nameof(MechanismPtr));
 
-            signature = new byte[SignatureLength];
-            var signatureLength = SignatureLength;
-            var result = (Status) Mechanism.sign(signature, ref signatureLength, message, messageLength, secretKey).ToInt64();
+            var resultSignature = new byte[SignatureLength];
+            var signatureLength = new UIntPtr(SignatureLength);
+            var result = (Status) Mechanism.sign(resultSignature, ref signatureLength, message, new UIntPtr(messageLength), secretKey).ToInt64();
 
             if (result != Status.Success)
                 throw new OpenQuantumSafeException((int) result);
 
-            Array.Resize(ref signature, signatureLength);
+            signature = new byte[signatureLength.ToUInt64()];
+
+            if (signatureLength.ToUInt64() > int.MaxValue)
+            {
+                Buffer.BlockCopy(resultSignature, 0, signature, 0, int.MaxValue);
+
+                for (var i = Convert.ToUInt64(int.MaxValue); i < signatureLength.ToUInt64(); i++)
+                    signature[i] = resultSignature[i];
+            }
+            else
+                Buffer.BlockCopy(resultSignature, 0, signature, 0, Convert.ToInt32(signatureLength.ToUInt64()));
         }
 
         public bool Verify(in byte[] message, in byte[] signature, in byte[] publicKey)
         {
-            return Verify(message, message.Length, signature, signature.Length, publicKey);
+            return Verify(message, Convert.ToUInt64(message.Length), signature, Convert.ToUInt64(signature.Length), publicKey);
         }
 
-        public bool Verify(in byte[] message, int messageLength, in byte[] signature, int signatureLength, in byte[] publicKey)
+        public bool Verify(in byte[] message, ulong messageLength, in byte[] signature, ulong signatureLength, in byte[] publicKey)
         {
             if (MechanismPtr == IntPtr.Zero)
                 throw new ObjectDisposedException(nameof(MechanismPtr));
 
-            var result = (Status) Mechanism.verify(message, messageLength, signature, signatureLength, publicKey).ToInt64();
+            var result = (Status) Mechanism.verify(message, new UIntPtr(messageLength), signature, new UIntPtr(signatureLength), publicKey).ToInt64();
 
             switch (result)
             {
@@ -137,36 +184,6 @@ namespace Tuckfirtle.OpenQuantumSafe
         protected override void Free(IntPtr mechanismPtr)
         {
             OQS_SIG_free(mechanismPtr);
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-        private struct OQS_SIG
-        {
-            public readonly IntPtr method_name;
-
-            public readonly IntPtr alg_version;
-
-            public readonly byte claimed_nist_level;
-
-            public readonly bool euf_cma;
-
-            public readonly UIntPtr length_public_key;
-
-            public readonly UIntPtr length_secret_key;
-
-            public readonly UIntPtr length_signature;
-
-            public readonly keypair_delegate keypair;
-
-            public readonly sign_delegate sign;
-
-            public readonly verify_delegate verify;
-
-            public delegate IntPtr keypair_delegate(byte[] public_key, byte[] secret_key);
-
-            public delegate IntPtr sign_delegate(byte[] signature, ref int signature_len, byte[] message, int message_len, byte[] secret_key);
-
-            public delegate IntPtr verify_delegate(byte[] message, int message_len, byte[] signature, int signature_len, byte[] public_key);
         }
     }
 }
