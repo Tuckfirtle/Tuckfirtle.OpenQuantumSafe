@@ -12,17 +12,7 @@ namespace Tuckfirtle.OpenQuantumSafe
 
         public static IReadOnlyList<string> EnabledMechanism { get; }
 
-        public string AlgorithmName { get; }
-
-        public string AlgorithmVersion { get; }
-
-        public byte ClaimedNistLevel => Mechanism.claimed_nist_level;
-
         public bool IsEufCma => Mechanism.euf_cma;
-
-        public int PublicKeyLength => (int) Mechanism.length_public_key.ToUInt64();
-
-        public int SecretKeyLength => (int) Mechanism.length_secret_key.ToUInt64();
 
         public int SignatureLength => (int) Mechanism.length_signature.ToUInt64();
 
@@ -65,6 +55,9 @@ namespace Tuckfirtle.OpenQuantumSafe
 
             AlgorithmName = Marshal.PtrToStringAnsi(Mechanism.method_name);
             AlgorithmVersion = Marshal.PtrToStringAnsi(Mechanism.alg_version);
+            ClaimedNistLevel = Mechanism.claimed_nist_level;
+            PublicKeyLength = (int) Mechanism.length_public_key.ToUInt64();
+            SecretKeyLength = (int) Mechanism.length_secret_key.ToUInt64();
         }
 
         [DllImport("liboqs", CallingConvention = CallingConvention.Cdecl)]
@@ -82,7 +75,7 @@ namespace Tuckfirtle.OpenQuantumSafe
         [DllImport("liboqs", CallingConvention = CallingConvention.Cdecl)]
         private static extern void OQS_SIG_free(IntPtr sig);
 
-        public void GenerateKeypair(out byte[] publicKey, out byte[] secretKey)
+        public override void GenerateKeypair(out byte[] publicKey, out byte[] secretKey)
         {
             if (MechanismPtr == IntPtr.Zero)
                 throw new ObjectDisposedException(nameof(MechanismPtr));
