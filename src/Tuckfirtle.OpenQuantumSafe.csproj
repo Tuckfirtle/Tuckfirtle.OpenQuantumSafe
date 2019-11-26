@@ -18,6 +18,18 @@
     <Platforms>arm;x64;x86</Platforms>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <DefineConstants>DEBUG</DefineConstants>
+    <Optimize>false</Optimize>
+    <DebugType>embedded</DebugType>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug_linux|arm' OR '$(Configuration)|$(Platform)'=='Release_linux|arm'">
     <None Include="..\include\net-core-linux-arm\liboqs.so" Link="liboqs.so">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
