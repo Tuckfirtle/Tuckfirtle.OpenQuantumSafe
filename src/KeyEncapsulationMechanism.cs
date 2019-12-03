@@ -17,7 +17,7 @@ namespace Tuckfirtle.OpenQuantumSafe
 
             public readonly byte claimed_nist_level;
 
-            public readonly bool ind_cca;
+            public readonly byte ind_cca;
 
             public readonly UIntPtr length_public_key;
 
@@ -50,7 +50,7 @@ namespace Tuckfirtle.OpenQuantumSafe
 
         public override byte ClaimedNistLevel => Mechanism.claimed_nist_level;
 
-        public bool IsIndCca => Mechanism.ind_cca;
+        public bool IsIndCca => Mechanism.ind_cca > 0;
 
         public override ulong PublicKeyLength => Mechanism.length_public_key.ToUInt64();
 

@@ -17,7 +17,7 @@ namespace Tuckfirtle.OpenQuantumSafe
 
             public readonly byte claimed_nist_level;
 
-            public readonly bool euf_cma;
+            public readonly byte euf_cma;
 
             public readonly UIntPtr length_public_key;
 
@@ -48,7 +48,7 @@ namespace Tuckfirtle.OpenQuantumSafe
 
         public override byte ClaimedNistLevel => Mechanism.claimed_nist_level;
 
-        public bool IsEufCma => Mechanism.euf_cma;
+        public bool IsEufCma => Mechanism.euf_cma > 0;
 
         public override ulong PublicKeyLength => Mechanism.length_public_key.ToUInt64();
 
@@ -92,7 +92,7 @@ namespace Tuckfirtle.OpenQuantumSafe
                 throw new OpenQuantumSafeException("Failed to initialize signature algorithm.");
 
             Mechanism = Marshal.PtrToStructure<OQS_SIG>(MechanismPtr);
-
+            
             AlgorithmName = Marshal.PtrToStringAnsi(Mechanism.method_name);
             AlgorithmVersion = Marshal.PtrToStringAnsi(Mechanism.alg_version);
         }
