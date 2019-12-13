@@ -38,6 +38,8 @@ namespace Tuckfirtle.OpenQuantumSafe
             public delegate IntPtr verify_delegate(byte[] message, UIntPtr message_len, byte[] signature, UIntPtr signature_len, byte[] public_key);
         }
 
+        private readonly OQS_SIG _mechanism;
+
         public static IReadOnlyList<string> SupportedMechanism { get; }
 
         public static IReadOnlyList<string> EnabledMechanism { get; }
@@ -46,17 +48,15 @@ namespace Tuckfirtle.OpenQuantumSafe
 
         public override string AlgorithmVersion { get; }
 
-        public override byte ClaimedNistLevel => Mechanism.claimed_nist_level;
+        public override byte ClaimedNistLevel => _mechanism.claimed_nist_level;
 
-        public bool IsEufCma => Mechanism.euf_cma > 0;
+        public bool IsEufCma => _mechanism.euf_cma > 0;
 
-        public override ulong PublicKeyLength => Mechanism.length_public_key.ToUInt64();
+        public override ulong PublicKeyLength => _mechanism.length_public_key.ToUInt64();
 
-        public override ulong SecretKeyLength => Mechanism.length_secret_key.ToUInt64();
+        public override ulong SecretKeyLength => _mechanism.length_secret_key.ToUInt64();
 
-        public ulong SignatureLength => Mechanism.length_signature.ToUInt64();
-
-        private OQS_SIG Mechanism { get; }
+        public ulong SignatureLength => _mechanism.length_signature.ToUInt64();
 
         static Signature()
         {
@@ -91,10 +91,10 @@ namespace Tuckfirtle.OpenQuantumSafe
             if (MechanismPtr == IntPtr.Zero)
                 throw new OpenQuantumSafeException("Failed to initialize signature algorithm.");
 
-            Mechanism = Marshal.PtrToStructure<OQS_SIG>(MechanismPtr);
-            
-            AlgorithmName = Marshal.PtrToStringAnsi(Mechanism.method_name);
-            AlgorithmVersion = Marshal.PtrToStringAnsi(Mechanism.alg_version);
+            _mechanism = Marshal.PtrToStructure<OQS_SIG>(MechanismPtr);
+
+            AlgorithmName = Marshal.PtrToStringAnsi(_mechanism.method_name);
+            AlgorithmVersion = Marshal.PtrToStringAnsi(_mechanism.alg_version);
         }
 
         [DllImport("liboqs", CallingConvention = CallingConvention.Cdecl)]
@@ -120,7 +120,7 @@ namespace Tuckfirtle.OpenQuantumSafe
             publicKey = new byte[PublicKeyLength];
             secretKey = new byte[SecretKeyLength];
 
-            var result = (Status) Mechanism.keypair(publicKey, secretKey).ToInt64();
+            var result = (Status) _mechanism.keypair(publicKey, secretKey).ToInt64();
 
             if (result != Status.Success)
                 throw new OpenQuantumSafeException((int) result);
@@ -138,7 +138,7 @@ namespace Tuckfirtle.OpenQuantumSafe
 
             var resultSignature = new byte[SignatureLength];
             var signatureLength = new UIntPtr(SignatureLength);
-            var result = (Status) Mechanism.sign(resultSignature, ref signatureLength, message, new UIntPtr(messageLength), secretKey).ToInt64();
+            var result = (Status) _mechanism.sign(resultSignature, ref signatureLength, message, new UIntPtr(messageLength), secretKey).ToInt64();
 
             if (result != Status.Success)
                 throw new OpenQuantumSafeException((int) result);
@@ -166,7 +166,7 @@ namespace Tuckfirtle.OpenQuantumSafe
             if (MechanismPtr == IntPtr.Zero)
                 throw new ObjectDisposedException(nameof(MechanismPtr));
 
-            var result = (Status) Mechanism.verify(message, new UIntPtr(messageLength), signature, new UIntPtr(signatureLength), publicKey).ToInt64();
+            var result = (Status) _mechanism.verify(message, new UIntPtr(messageLength), signature, new UIntPtr(signatureLength), publicKey).ToInt64();
 
             switch (result)
             {
@@ -174,6 +174,7 @@ namespace Tuckfirtle.OpenQuantumSafe
                     return true;
 
                 case Status.Error:
+                case Status.ExternalLibErrorOpenSsl:
                     return false;
 
                 default:

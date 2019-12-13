@@ -48,19 +48,19 @@ namespace Tuckfirtle.OpenQuantumSafe
 
         public override string AlgorithmVersion { get; }
 
-        public override byte ClaimedNistLevel => Mechanism.claimed_nist_level;
+        public override byte ClaimedNistLevel => _mechanism.claimed_nist_level;
 
-        public bool IsIndCca => Mechanism.ind_cca > 0;
+        public bool IsIndCca => _mechanism.ind_cca > 0;
 
-        public override ulong PublicKeyLength => Mechanism.length_public_key.ToUInt64();
+        public override ulong PublicKeyLength => _mechanism.length_public_key.ToUInt64();
 
-        public override ulong SecretKeyLength => Mechanism.length_secret_key.ToUInt64();
+        public override ulong SecretKeyLength => _mechanism.length_secret_key.ToUInt64();
 
-        public ulong CipherTextLength => Mechanism.length_ciphertext.ToUInt64();
+        public ulong CipherTextLength => _mechanism.length_ciphertext.ToUInt64();
 
-        public ulong SharedSecretLength => Mechanism.length_shared_secret.ToUInt64();
+        public ulong SharedSecretLength => _mechanism.length_shared_secret.ToUInt64();
 
-        private OQS_KEM Mechanism { get; }
+        private readonly OQS_KEM _mechanism;
 
         static KeyEncapsulationMechanism()
         {
@@ -95,10 +95,10 @@ namespace Tuckfirtle.OpenQuantumSafe
             if (MechanismPtr == IntPtr.Zero)
                 throw new OpenQuantumSafeException("Failed to initialize key encapsulation mechanism algorithm.");
 
-            Mechanism = Marshal.PtrToStructure<OQS_KEM>(MechanismPtr);
+            _mechanism = Marshal.PtrToStructure<OQS_KEM>(MechanismPtr);
 
-            AlgorithmName = Marshal.PtrToStringAnsi(Mechanism.method_name);
-            AlgorithmVersion = Marshal.PtrToStringAnsi(Mechanism.alg_version);
+            AlgorithmName = Marshal.PtrToStringAnsi(_mechanism.method_name);
+            AlgorithmVersion = Marshal.PtrToStringAnsi(_mechanism.alg_version);
         }
 
         [DllImport("liboqs", CallingConvention = CallingConvention.Cdecl)]
@@ -124,7 +124,7 @@ namespace Tuckfirtle.OpenQuantumSafe
             publicKey = new byte[PublicKeyLength];
             secretKey = new byte[SecretKeyLength];
 
-            var result = (Status) Mechanism.keypair(publicKey, secretKey).ToInt64();
+            var result = (Status) _mechanism.keypair(publicKey, secretKey).ToInt64();
 
             if (result != Status.Success)
                 throw new OpenQuantumSafeException((int) result);
@@ -138,7 +138,7 @@ namespace Tuckfirtle.OpenQuantumSafe
             cipherText = new byte[CipherTextLength];
             sharedSecret = new byte[SharedSecretLength];
 
-            var result = (Status) Mechanism.encaps(cipherText, sharedSecret, publicKey).ToInt64();
+            var result = (Status) _mechanism.encaps(cipherText, sharedSecret, publicKey).ToInt64();
 
             if (result != Status.Success)
                 throw new OpenQuantumSafeException((int) result);
@@ -151,7 +151,7 @@ namespace Tuckfirtle.OpenQuantumSafe
 
             sharedSecret = new byte[SharedSecretLength];
 
-            var result = (Status) Mechanism.decaps(sharedSecret, cipherText, secretKey).ToInt64();
+            var result = (Status) _mechanism.decaps(sharedSecret, cipherText, secretKey).ToInt64();
 
             if (result != Status.Success)
                 throw new OpenQuantumSafeException((int) result);

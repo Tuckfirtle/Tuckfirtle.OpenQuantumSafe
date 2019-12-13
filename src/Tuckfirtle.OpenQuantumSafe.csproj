@@ -18,6 +18,10 @@
     <Platforms>arm;x64;x86</Platforms>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Platform)'=='arm'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(Configuration)'=='Debug_linux' OR '$(Configuration)'=='Debug_osx' OR '$(Configuration)'=='Debug_win'">
     <DefineConstants>DEBUG</DefineConstants>
     <Optimize>false</Optimize>
