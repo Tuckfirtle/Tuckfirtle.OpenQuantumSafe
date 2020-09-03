@@ -48,13 +48,13 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug_win|x64' OR '$(Configuration)|$(Platform)'=='Release_win|x64'">
-    <None Include="..\include\net-core-win-x64\liboqs.dll" Link="liboqs.dll">
+    <None Include="..\include\net-core-win-x64\oqs.dll" Link="oqs.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug_win|x86' OR '$(Configuration)|$(Platform)'=='Release_win|x86'">
-    <None Include="..\include\net-core-win-x86\liboqs.dll" Link="liboqs.dll">
+    <None Include="..\include\net-core-win-x86\oqs.dll" Link="oqs.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

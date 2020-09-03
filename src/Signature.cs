@@ -9,54 +9,54 @@ namespace Tuckfirtle.OpenQuantumSafe
     public class Signature : Mechanism
     {
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-        private struct OQS_SIG
+        private struct OqsSig
         {
-            public readonly IntPtr method_name;
+            public readonly IntPtr MethodName;
 
-            public readonly IntPtr alg_version;
+            public readonly IntPtr AlgVersion;
 
-            public readonly byte claimed_nist_level;
+            public readonly byte ClaimedNistLevel;
 
-            public readonly byte euf_cma;
+            public readonly byte EufCma;
 
-            public readonly UIntPtr length_public_key;
+            public readonly UIntPtr LengthPublicKey;
 
-            public readonly UIntPtr length_secret_key;
+            public readonly UIntPtr LengthSecretKey;
 
-            public readonly UIntPtr length_signature;
+            public readonly UIntPtr LengthSignature;
 
-            public readonly keypair_delegate keypair;
+            public readonly KeypairDelegate Keypair;
 
-            public readonly sign_delegate sign;
+            public readonly SignDelegate Sign;
 
-            public readonly verify_delegate verify;
+            public readonly VerifyDelegate Verify;
 
-            public delegate IntPtr keypair_delegate(byte[] public_key, byte[] secret_key);
+            public delegate IntPtr KeypairDelegate(byte[] publicKey, byte[] secretKey);
 
-            public delegate IntPtr sign_delegate(byte[] signature, ref UIntPtr signature_len, byte[] message, UIntPtr message_len, byte[] secret_key);
+            public delegate IntPtr SignDelegate(byte[] signature, ref UIntPtr signatureLen, byte[] message, UIntPtr messageLen, byte[] secretKey);
 
-            public delegate IntPtr verify_delegate(byte[] message, UIntPtr message_len, byte[] signature, UIntPtr signature_len, byte[] public_key);
+            public delegate IntPtr VerifyDelegate(byte[] message, UIntPtr messageLen, byte[] signature, UIntPtr signatureLen, byte[] publicKey);
         }
 
-        private readonly OQS_SIG _mechanism;
+        private readonly OqsSig _mechanism;
 
-        public static IReadOnlyList<string> SupportedMechanism { get; }
+        public static string[] SupportedMechanism { get; }
 
-        public static IReadOnlyList<string> EnabledMechanism { get; }
+        public static string[] EnabledMechanism { get; }
 
         public override string AlgorithmName { get; }
 
         public override string AlgorithmVersion { get; }
 
-        public override byte ClaimedNistLevel => _mechanism.claimed_nist_level;
+        public override byte ClaimedNistLevel => _mechanism.ClaimedNistLevel;
 
-        public bool IsEufCma => _mechanism.euf_cma > 0;
+        public bool IsEufCma { get; }
 
-        public override ulong PublicKeyLength => _mechanism.length_public_key.ToUInt64();
+        public override ulong PublicKeyLength { get; }
 
-        public override ulong SecretKeyLength => _mechanism.length_secret_key.ToUInt64();
+        public override ulong SecretKeyLength { get; }
 
-        public ulong SignatureLength => _mechanism.length_signature.ToUInt64();
+        public ulong SignatureLength { get; }
 
         static Signature()
         {
@@ -67,63 +67,64 @@ namespace Tuckfirtle.OpenQuantumSafe
 
             for (var i = 0; i < mechanismCount; i++)
             {
-                var mechanismName = Marshal.PtrToStringAnsi(OQS_SIG_alg_identifier(new UIntPtr((uint) i)));
+                var mechanismName = Marshal.PtrToStringAnsi(OQS_SIG_alg_identifier((UIntPtr) i));
                 supportedMechanism.Add(mechanismName);
 
                 if (OQS_SIG_alg_is_enabled(mechanismName) == 1)
+                {
                     enabledMechanism.Add(mechanismName);
+                }
             }
 
-            SupportedMechanism = supportedMechanism;
-            EnabledMechanism = enabledMechanism;
+            SupportedMechanism = supportedMechanism.ToArray();
+            EnabledMechanism = enabledMechanism.ToArray();
         }
 
         public Signature(string signatureAlgorithm)
         {
-            if (!SupportedMechanism.Contains(signatureAlgorithm))
-                throw new MechanismNotSupportedException(signatureAlgorithm);
-
-            if (!EnabledMechanism.Contains(signatureAlgorithm))
-                throw new MechanismNotEnabledException(signatureAlgorithm);
+            if (!SupportedMechanism.Contains(signatureAlgorithm)) throw new MechanismNotSupportedException(signatureAlgorithm);
+            if (!EnabledMechanism.Contains(signatureAlgorithm)) throw new MechanismNotEnabledException(signatureAlgorithm);
 
             MechanismPtr = OQS_SIG_new(signatureAlgorithm);
 
-            if (MechanismPtr == IntPtr.Zero)
-                throw new OpenQuantumSafeException("Failed to initialize signature algorithm.");
+            if (MechanismPtr == IntPtr.Zero) throw new OpenQuantumSafeException("Failed to initialize signature algorithm.");
 
-            _mechanism = Marshal.PtrToStructure<OQS_SIG>(MechanismPtr);
+            var mechanism = Marshal.PtrToStructure<OqsSig>(MechanismPtr);
+            _mechanism = mechanism;
 
-            AlgorithmName = Marshal.PtrToStringAnsi(_mechanism.method_name);
-            AlgorithmVersion = Marshal.PtrToStringAnsi(_mechanism.alg_version);
+            AlgorithmName = Marshal.PtrToStringAnsi(mechanism.MethodName);
+            AlgorithmVersion = Marshal.PtrToStringAnsi(mechanism.AlgVersion);
+            IsEufCma = mechanism.EufCma > 0;
+            PublicKeyLength = mechanism.LengthPublicKey.ToUInt64();
+            SecretKeyLength = mechanism.LengthSecretKey.ToUInt64();
+            SignatureLength = mechanism.LengthSignature.ToUInt64();
         }
 
-        [DllImport("liboqs", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("oqs", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr OQS_SIG_alg_identifier(UIntPtr i);
 
-        [DllImport("liboqs", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("oqs", CallingConvention = CallingConvention.Cdecl)]
         private static extern int OQS_SIG_alg_count();
 
-        [DllImport("liboqs", CallingConvention = CallingConvention.Cdecl)]
-        private static extern int OQS_SIG_alg_is_enabled(string method_name);
+        [DllImport("oqs", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int OQS_SIG_alg_is_enabled(string methodName);
 
-        [DllImport("liboqs", CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr OQS_SIG_new(string method_name);
+        [DllImport("oqs", CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr OQS_SIG_new(string methodName);
 
-        [DllImport("liboqs", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("oqs", CallingConvention = CallingConvention.Cdecl)]
         private static extern void OQS_SIG_free(IntPtr sig);
 
         public override void GenerateKeypair(out byte[] publicKey, out byte[] secretKey)
         {
-            if (MechanismPtr == IntPtr.Zero)
-                throw new ObjectDisposedException(nameof(MechanismPtr));
+            if (MechanismPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(MechanismPtr));
 
             publicKey = new byte[PublicKeyLength];
             secretKey = new byte[SecretKeyLength];
 
-            var result = (Status) _mechanism.keypair(publicKey, secretKey).ToInt64();
+            var result = (Status) _mechanism.Keypair(publicKey, secretKey).ToInt64();
 
-            if (result != Status.Success)
-                throw new OpenQuantumSafeException((int) result);
+            if (result != Status.Success) throw new OpenQuantumSafeException((int) result);
         }
 
         public void Sign(out byte[] signature, in byte[] message, in byte[] secretKey)
@@ -133,15 +134,13 @@ namespace Tuckfirtle.OpenQuantumSafe
 
         public void Sign(out byte[] signature, in byte[] message, in ulong messageLength, in byte[] secretKey)
         {
-            if (MechanismPtr == IntPtr.Zero)
-                throw new ObjectDisposedException(nameof(MechanismPtr));
+            if (MechanismPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(MechanismPtr));
 
             var resultSignature = new byte[SignatureLength];
             var signatureLength = new UIntPtr(SignatureLength);
-            var result = (Status) _mechanism.sign(resultSignature, ref signatureLength, message, new UIntPtr(messageLength), secretKey).ToInt64();
+            var result = (Status) _mechanism.Sign(resultSignature, ref signatureLength, message, new UIntPtr(messageLength), secretKey).ToInt64();
 
-            if (result != Status.Success)
-                throw new OpenQuantumSafeException((int) result);
+            if (result != Status.Success) throw new OpenQuantumSafeException((int) result);
 
             signature = new byte[signatureLength.ToUInt64()];
 
@@ -150,10 +149,14 @@ namespace Tuckfirtle.OpenQuantumSafe
                 Buffer.BlockCopy(resultSignature, 0, signature, 0, int.MaxValue);
 
                 for (var i = Convert.ToUInt64(int.MaxValue); i < signatureLength.ToUInt64(); i++)
+                {
                     signature[i] = resultSignature[i];
+                }
             }
             else
+            {
                 Buffer.BlockCopy(resultSignature, 0, signature, 0, Convert.ToInt32(signatureLength.ToUInt64()));
+            }
         }
 
         public bool Verify(in byte[] message, in byte[] signature, in byte[] publicKey)
@@ -163,10 +166,9 @@ namespace Tuckfirtle.OpenQuantumSafe
 
         public bool Verify(in byte[] message, ulong messageLength, in byte[] signature, ulong signatureLength, in byte[] publicKey)
         {
-            if (MechanismPtr == IntPtr.Zero)
-                throw new ObjectDisposedException(nameof(MechanismPtr));
+            if (MechanismPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(MechanismPtr));
 
-            var result = (Status) _mechanism.verify(message, new UIntPtr(messageLength), signature, new UIntPtr(signatureLength), publicKey).ToInt64();
+            var result = (Status) _mechanism.Verify(message, new UIntPtr(messageLength), signature, new UIntPtr(signatureLength), publicKey).ToInt64();
 
             switch (result)
             {
