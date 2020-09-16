@@ -1,66 +1,120 @@
-﻿using System;
+﻿// Copyright (C) 2020, The Tuckfirtle Developers
+// 
+// Please see the included LICENSE file for more information.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Tuckfirtle.OpenQuantumSafe.Exception;
+using Tuckfirtle.OpenQuantumSafe.Unmanaged;
 
 namespace Tuckfirtle.OpenQuantumSafe
 {
-    public class KeyEncapsulationMechanism : Mechanism
+    public class KeyEncapsulationMechanism : IDisposable
     {
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-        private struct OqsKem
-        {
-            public readonly IntPtr MethodName;
-
-            public readonly IntPtr AlgVersion;
-
-            public readonly byte ClaimedNistLevel;
-
-            public readonly byte IndCca;
-
-            public readonly UIntPtr LengthPublicKey;
-
-            public readonly UIntPtr LengthSecretKey;
-
-            public readonly UIntPtr LengthCiphertext;
-
-            public readonly UIntPtr LengthSharedSecret;
-
-            public readonly KeypairDelegate Keypair;
-
-            public readonly EncapsDelegate Encaps;
-
-            public readonly DecapsDelegate Decaps;
-
-            public delegate IntPtr KeypairDelegate(byte[] publicKey, byte[] secretKey);
-
-            public delegate IntPtr EncapsDelegate(byte[] ciphertext, byte[] sharedSecret, byte[] publicKey);
-
-            public delegate IntPtr DecapsDelegate(byte[] sharedSecret, byte[] ciphertext, byte[] secretKey);
-        }
-
-        private readonly OqsKem _mechanism;
+        private readonly IntPtr _keyEncapsulationMechanismIntPtr;
+        private readonly UnmanagedKeyEncapsulationMechanism _keyEncapsulationMechanism;
 
         public static string[] SupportedMechanism { get; }
 
         public static string[] EnabledMechanism { get; }
 
-        public override string AlgorithmName { get; }
+        /// <summary>
+        /// Printable string representing the name of the key encapsulation mechanism.
+        /// </summary>
+        public string MethodName
+        {
+            get
+            {
+                if (_keyEncapsulationMechanismIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_keyEncapsulationMechanismIntPtr));
+                return _keyEncapsulationMechanism.MethodName;
+            }
+        }
 
-        public override string AlgorithmVersion { get; }
+        /// <summary>
+        /// Printable string representing the version of the cryptographic algorithm.
+        /// </summary>
+        public string Version
+        {
+            get
+            {
+                if (_keyEncapsulationMechanismIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_keyEncapsulationMechanismIntPtr));
+                return _keyEncapsulationMechanism.Version;
+            }
+        }
 
-        public override byte ClaimedNistLevel => _mechanism.ClaimedNistLevel;
+        /// <summary>
+        /// The NIST security level (1, 2, 3, 4, 5) claimed in this algorithm's original NIST submission.
+        /// </summary>
+        public byte ClaimedNistLevel
+        {
+            get
+            {
+                if (_keyEncapsulationMechanismIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_keyEncapsulationMechanismIntPtr));
+                return _keyEncapsulationMechanism.ClaimedNistLevel;
+            }
+        }
 
-        public bool IsIndCca { get; }
+        /// <summary>
+        /// Whether the KEM offers IND-CCA security (TRUE) or IND-CPA security (FALSE).
+        /// </summary>
+        public bool IsIndCca
+        {
+            get
+            {
+                if (_keyEncapsulationMechanismIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_keyEncapsulationMechanismIntPtr));
+                return _keyEncapsulationMechanism.IsIndCca;
+            }
+        }
 
-        public override ulong PublicKeyLength { get; }
+        /// <summary>
+        /// The (maximum) length, in bytes, of public keys for this KEM.
+        /// </summary>
+        public UIntPtr PublicKeyLength
+        {
+            get
+            {
+                if (_keyEncapsulationMechanismIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_keyEncapsulationMechanismIntPtr));
+                return _keyEncapsulationMechanism.PublicKeyLength;
+            }
+        }
 
-        public override ulong SecretKeyLength { get; }
+        /// <summary>
+        /// The (maximum) length, in bytes, of secret keys for this KEM.
+        /// </summary>
+        public UIntPtr SecretKeyLength
+        {
+            get
+            {
+                if (_keyEncapsulationMechanismIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_keyEncapsulationMechanismIntPtr));
+                return _keyEncapsulationMechanism.SecretKeyLength;
+            }
+        }
 
-        public ulong CipherTextLength { get; }
+        /// <summary>
+        /// The (maximum) length, in bytes, of ciphertexts for this KEM.
+        /// </summary>
+        public UIntPtr CiphertextLength
+        {
+            get
+            {
+                if (_keyEncapsulationMechanismIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_keyEncapsulationMechanismIntPtr));
+                return _keyEncapsulationMechanism.CiphertextLength;
+            }
+        }
 
-        public ulong SharedSecretLength { get; }
+        /// <summary>
+        /// The (maximum) length, in bytes, of shared secrets for this KEM.
+        /// </summary>
+        public UIntPtr SharedSecretLength
+        {
+            get
+            {
+                if (_keyEncapsulationMechanismIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_keyEncapsulationMechanismIntPtr));
+                return _keyEncapsulationMechanism.SharedSecretLength;
+            }
+        }
 
         static KeyEncapsulationMechanism()
         {
@@ -71,7 +125,9 @@ namespace Tuckfirtle.OpenQuantumSafe
 
             for (var i = 0; i < mechanismCount; i++)
             {
-                var mechanismName = Marshal.PtrToStringAnsi(OQS_KEM_alg_identifier(new UIntPtr(Convert.ToUInt32(i))));
+                var mechanismName = Marshal.PtrToStringAnsi(OQS_KEM_alg_identifier(new UIntPtr((uint) i)));
+                if (mechanismName == null) continue;
+
                 supportedMechanism.Add(mechanismName);
 
                 if (OQS_KEM_alg_is_enabled(mechanismName) == 1)
@@ -89,75 +145,96 @@ namespace Tuckfirtle.OpenQuantumSafe
             if (!SupportedMechanism.Contains(keyEncapsulationMechanismAlgorithm)) throw new MechanismNotSupportedException(keyEncapsulationMechanismAlgorithm);
             if (!EnabledMechanism.Contains(keyEncapsulationMechanismAlgorithm)) throw new MechanismNotEnabledException(keyEncapsulationMechanismAlgorithm);
 
-            MechanismPtr = OQS_KEM_new(keyEncapsulationMechanismAlgorithm);
+            _keyEncapsulationMechanismIntPtr = OQS_KEM_new(keyEncapsulationMechanismAlgorithm);
 
-            if (MechanismPtr == IntPtr.Zero) throw new OpenQuantumSafeException("Failed to initialize key encapsulation mechanism algorithm.");
+            if (_keyEncapsulationMechanismIntPtr == IntPtr.Zero) throw new OpenQuantumSafeException("Failed to initialize key encapsulation mechanism algorithm.");
 
-            var mechanism = Marshal.PtrToStructure<OqsKem>(MechanismPtr);
-            _mechanism = mechanism;
-
-            AlgorithmName = Marshal.PtrToStringAnsi(mechanism.MethodName);
-            AlgorithmVersion = Marshal.PtrToStringAnsi(mechanism.AlgVersion);
-            IsIndCca = mechanism.IndCca > 0;
-            PublicKeyLength = mechanism.LengthPublicKey.ToUInt64();
-            SecretKeyLength = mechanism.LengthSecretKey.ToUInt64();
-            CipherTextLength = mechanism.LengthCiphertext.ToUInt64();
-            SharedSecretLength = mechanism.LengthSharedSecret.ToUInt64();
+            _keyEncapsulationMechanism = Marshal.PtrToStructure<UnmanagedKeyEncapsulationMechanism>(_keyEncapsulationMechanismIntPtr);
         }
 
-        [DllImport("oqs", CallingConvention = CallingConvention.Cdecl)]
+        ~KeyEncapsulationMechanism()
+        {
+            ReleaseUnmanagedResources();
+        }
+
+        [DllImport("oqs", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern IntPtr OQS_KEM_alg_identifier(UIntPtr i);
 
-        [DllImport("oqs", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("oqs", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern int OQS_KEM_alg_count();
 
-        [DllImport("oqs", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("oqs", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern int OQS_KEM_alg_is_enabled(string methodName);
 
-        [DllImport("oqs", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("oqs", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern IntPtr OQS_KEM_new(string methodName);
 
-        [DllImport("oqs", CallingConvention = CallingConvention.Cdecl)]
-        private static extern void OQS_KEM_free(IntPtr sig);
+        [DllImport("oqs", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        private static extern void OQS_KEM_free(IntPtr kem);
 
-        public override void GenerateKeypair(out byte[] publicKey, out byte[] secretKey)
+        /// <summary>
+        /// Keypair generation algorithm.
+        /// </summary>
+        /// <param name="publicKey">The public key represented as a byte string.</param>
+        /// <param name="secretKey">The secret key represented as a byte string.</param>
+        public void GenerateKeypair(out byte[] publicKey, out byte[] secretKey)
         {
-            if (MechanismPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(MechanismPtr));
+            if (_keyEncapsulationMechanismIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_keyEncapsulationMechanismIntPtr));
 
-            publicKey = new byte[PublicKeyLength];
-            secretKey = new byte[SecretKeyLength];
+            publicKey = new byte[_keyEncapsulationMechanism.PublicKeyLength.ToUInt64()];
+            secretKey = new byte[_keyEncapsulationMechanism.SecretKeyLength.ToUInt64()];
 
-            var result = (Status) _mechanism.Keypair(publicKey, secretKey).ToInt64();
+            var result = _keyEncapsulationMechanism.GenerateKeypair(publicKey, secretKey);
 
-            if (result != Status.Success) throw new OpenQuantumSafeException((int) result);
+            if (result != Status.Success) throw new OpenQuantumSafeException(result);
         }
 
-        public void Encapsulation(out byte[] cipherText, out byte[] sharedSecret, in byte[] publicKey)
+        /// <summary>
+        /// Encapsulation algorithm.
+        /// </summary>
+        /// <param name="ciphertext">The ciphertext (encapsulation) represented as a byte string.</param>
+        /// <param name="sharedSecret">The shared secret represented as a byte string.</param>
+        /// <param name="publicKey">The public key represented as a byte string.</param>
+        public void Encapsulation(out byte[] ciphertext, out byte[] sharedSecret, byte[] publicKey)
         {
-            if (MechanismPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(MechanismPtr));
+            if (_keyEncapsulationMechanismIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_keyEncapsulationMechanismIntPtr));
 
-            cipherText = new byte[CipherTextLength];
-            sharedSecret = new byte[SharedSecretLength];
+            ciphertext = new byte[_keyEncapsulationMechanism.CiphertextLength.ToUInt64()];
+            sharedSecret = new byte[_keyEncapsulationMechanism.SharedSecretLength.ToUInt64()];
 
-            var result = (Status) _mechanism.Encaps(cipherText, sharedSecret, publicKey).ToInt64();
+            var result = _keyEncapsulationMechanism.Encapsulation(ciphertext, sharedSecret, publicKey);
 
-            if (result != Status.Success) throw new OpenQuantumSafeException((int) result);
+            if (result != Status.Success) throw new OpenQuantumSafeException(result);
         }
 
-        public void Decapsulation(out byte[] sharedSecret, in byte[] cipherText, in byte[] secretKey)
+        /// <summary>
+        /// Decapsulation algorithm.
+        /// </summary>
+        /// <param name="sharedSecret">The shared secret represented as a byte string.</param>
+        /// <param name="ciphertext">The ciphertext (encapsulation) represented as a byte string.</param>
+        /// <param name="secretKey">The secret key represented as a byte string.</param>
+        public void Decapsulation(out byte[] sharedSecret, byte[] ciphertext, byte[] secretKey)
         {
-            if (MechanismPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(MechanismPtr));
+            if (_keyEncapsulationMechanismIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_keyEncapsulationMechanismIntPtr));
 
-            sharedSecret = new byte[SharedSecretLength];
+            sharedSecret = new byte[_keyEncapsulationMechanism.SharedSecretLength.ToUInt64()];
 
-            var result = (Status) _mechanism.Decaps(sharedSecret, cipherText, secretKey).ToInt64();
+            var result = _keyEncapsulationMechanism.Decapsulation(sharedSecret, ciphertext, secretKey);
 
-            if (result != Status.Success) throw new OpenQuantumSafeException((int) result);
+            if (result != Status.Success) throw new OpenQuantumSafeException(result);
         }
 
-        protected override void Free(IntPtr mechanismPtr)
+        private void ReleaseUnmanagedResources()
         {
-            OQS_KEM_free(mechanismPtr);
+            if (_keyEncapsulationMechanismIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_keyEncapsulationMechanismIntPtr));
+
+            OQS_KEM_free(_keyEncapsulationMechanismIntPtr);
+        }
+
+        public void Dispose()
+        {
+            ReleaseUnmanagedResources();
+            GC.SuppressFinalize(this);
         }
     }
 }

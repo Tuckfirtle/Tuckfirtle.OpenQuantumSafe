@@ -1,4 +1,8 @@
-﻿namespace Tuckfirtle.OpenQuantumSafe.Exception
+﻿// Copyright (C) 2020, The Tuckfirtle Developers
+// 
+// Please see the included LICENSE file for more information.
+
+namespace Tuckfirtle.OpenQuantumSafe.Exception
 {
     public class MechanismNotEnabledException : MechanismException
     {
