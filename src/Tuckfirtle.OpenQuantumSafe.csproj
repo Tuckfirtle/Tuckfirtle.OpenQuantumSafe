@@ -13,48 +13,42 @@
     <Description>Tuckfirtle open quantum safe wrapper.</Description>
     <PackageProjectUrl>https://github.com/tuckfirtle/Tuckfirtle.OpenQuantumSafe</PackageProjectUrl>
     <RepositoryUrl>https://github.com/tuckfirtle/Tuckfirtle.OpenQuantumSafe</RepositoryUrl>
-    <Configurations>Debug_linux;Release_linux;Debug_osx;Release_osx;Debug_win;Release_win</Configurations>
+    <Configurations>Debug_linux;Release_linux;Debug_win;Release_win</Configurations>
     <Platforms>AnyCPU;x64;x86</Platforms>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)'=='Debug_linux' OR '$(Configuration)'=='Debug_osx' OR '$(Configuration)'=='Debug_win'">
+  <PropertyGroup Condition="'$(Configuration)'=='Debug_linux' OR '$(Configuration)'=='Debug_win'">
     <DefineConstants>DEBUG</DefineConstants>
     <Optimize>false</Optimize>
     <DebugType>embedded</DebugType>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)'=='Release_linux' OR '$(Configuration)'=='Release_osx' OR '$(Configuration)'=='Release_win'">
+  <PropertyGroup Condition="'$(Configuration)'=='Release_linux' OR '$(Configuration)'=='Release_win'">
     <Optimize>true</Optimize>
     <DebugType>none</DebugType>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug_linux|AnyCPU' OR '$(Configuration)|$(Platform)'=='Release_linux|AnyCPU'">
-    <None Include="..\include\netcore-linux-arm\liboqs.so" Link="liboqs.so">
+    <None Include="..\liboqs\out\install\netcore-linux-arm\lib\liboqs.so.0.4.0" Link="liboqs.so">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug_linux|x64' OR '$(Configuration)|$(Platform)'=='Release_linux|x64'">
-    <None Include="..\include\netcore-linux-x64\liboqs.so" Link="liboqs.so">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug_osx|x64' OR '$(Configuration)|$(Platform)'=='Release_osx|x64'">
-    <None Include="..\include\netcore-osx-x64\liboqs.dylib" Link="liboqs.dylib">
+    <None Include="..\liboqs\out\install\netcore-linux-x64\lib\liboqs.so.0.4.0" Link="liboqs.so">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug_win|x64' OR '$(Configuration)|$(Platform)'=='Release_win|x64'">
-    <None Include="..\include\netcore-win-x64\oqs.dll" Link="oqs.dll">
+    <None Include="..\liboqs\out\install\netcore-win-x64\bin\oqs.dll" Link="oqs.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug_win|x86' OR '$(Configuration)|$(Platform)'=='Release_win|x86'">
-    <None Include="..\include\netcore-win-x86\oqs.dll" Link="oqs.dll">
+    <None Include="..\liboqs\out\install\netcore-win-x86\bin\oqs.dll" Link="oqs.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
