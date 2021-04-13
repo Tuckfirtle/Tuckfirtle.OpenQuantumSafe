@@ -30,13 +30,13 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug_linux|AnyCPU' OR '$(Configuration)|$(Platform)'=='Release_linux|AnyCPU'">
-    <None Include="..\liboqs\out\install\netcore-linux-arm\lib\liboqs.so.0.5.0-dev" Link="liboqs.so">
+    <None Include="..\liboqs\out\install\netcore-linux-arm\lib\liboqs.so.0.6.0-dev" Link="liboqs.so">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug_linux|x64' OR '$(Configuration)|$(Platform)'=='Release_linux|x64'">
-    <None Include="..\liboqs\out\install\netcore-linux-x64\lib\liboqs.so.0.5.0-dev" Link="liboqs.so">
+    <None Include="..\liboqs\out\install\netcore-linux-x64\lib\liboqs.so.0.6.0-dev" Link="liboqs.so">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
