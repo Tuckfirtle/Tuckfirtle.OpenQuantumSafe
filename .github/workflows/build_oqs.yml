@@ -8,7 +8,6 @@ on:
   workflow_dispatch:
 
 env:
-  VCPKG_ROOT: vcpkg
   VCPKG_BINARY_SOURCES: clear;nuget,GitHub,readwrite;files,${{ github.workspace }}/vcpkg/vcpkg_installed,readwrite
   CMAKE_TOOLCHAIN_FILE: vcpkg/scripts/buildsystems/vcpkg.cmake
   CMAKE_SOURCE_ROOT: liboqs
@@ -44,9 +43,8 @@ jobs:
         include:
           - os: windows-2022
             arch: x64
-            install: ""
-            post_install:
-              - 'Move-Item -Path "${{ github.workspace }}/vcpkg.json" -Destination "${{ github.workspace }}/liboqs"'
+            install:
+              - Move-Item -Path "${{ github.workspace }}/vcpkg.json" -Destination "${{ github.workspace }}/liboqs"
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -67,9 +65,8 @@ jobs:
 
           - os: windows-2022
             arch: x86
-            install: ""
-            post_install:
-              - 'Move-Item -Path "${{ github.workspace }}/vcpkg.json" -Destination "${{ github.workspace }}/liboqs"'
+            install:
+              - Move-Item -Path "${{ github.workspace }}/vcpkg.json" -Destination "${{ github.workspace }}/liboqs"
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -90,9 +87,8 @@ jobs:
 
           - os: windows-2022
             arch: arm
-            install: ""
-            post_install:
-              - 'Move-Item -Path "${{ github.workspace }}/vcpkg.json" -Destination "${{ github.workspace }}/liboqs"'
+            install:
+              - Move-Item -Path "${{ github.workspace }}/vcpkg.json" -Destination "${{ github.workspace }}/liboqs"
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -110,9 +106,8 @@ jobs:
 
           - os: windows-2022
             arch: arm64
-            install: ""
-            post_install:
-              - 'Move-Item -Path "${{ github.workspace }}/vcpkg.json" -Destination "${{ github.workspace }}/liboqs"'
+            install:
+              - Move-Item -Path "${{ github.workspace }}/vcpkg.json" -Destination "${{ github.workspace }}/liboqs"
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -130,20 +125,10 @@ jobs:
 
           - os: ubuntu-latest
             arch: x64
-            install: >-
-              curl
-              zip
-              unzip
-              tar
-              p7zip-full
-              cmake
-              ninja-build
-              build-essential
-              pkg-config
-              gcc-10
-              g++-10
-            post_install:
-              - 'Move-Item -Path "${{ github.workspace }}/vcpkg.json" -Destination "${{ github.workspace }}/liboqs"'
+            install:
+              - sudo apt-get update -y
+              - sudo apt-get install curl zip unzip tar p7zip-full cmake ninja-build build-essential pkg-config gcc-10 g++-10 -y
+              - Move-Item -Path "${{ github.workspace }}/vcpkg.json" -Destination "${{ github.workspace }}/liboqs"
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -161,20 +146,10 @@ jobs:
 
           - os: ubuntu-latest
             arch: arm
-            install: >-
-              curl
-              zip
-              unzip
-              tar
-              p7zip-full
-              cmake
-              ninja-build
-              build-essential
-              pkg-config
-              gcc-10-arm-linux-gnueabihf
-              g++-10-arm-linux-gnueabihf
-            post_install:
-              - 'Move-Item -Path "${{ github.workspace }}/vcpkg.json" -Destination "${{ github.workspace }}/liboqs"'
+            install:
+              - sudo apt-get update -y
+              - sudo apt-get install curl zip unzip tar p7zip-full cmake ninja-build build-essential pkg-config gcc-10-arm-linux-gnueabihf g++-10-arm-linux-gnueabihf -y
+              - Move-Item -Path "${{ github.workspace }}/vcpkg.json" -Destination "${{ github.workspace }}/liboqs"
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -192,20 +167,10 @@ jobs:
 
           - os: ubuntu-latest
             arch: arm64
-            install: >-
-              curl
-              zip
-              unzip
-              tar
-              p7zip-full
-              cmake
-              ninja-build
-              build-essential
-              pkg-config
-              gcc-10-aarch64-linux-gnu
-              g++-10-aarch64-linux-gnu
-            post_install:
-              - 'Move-Item -Path "${{ github.workspace }}/vcpkg.json" -Destination "${{ github.workspace }}/liboqs"'
+            install:
+              - sudo apt-get update -y
+              - sudo apt-get install curl zip unzip tar p7zip-full cmake ninja-build build-essential pkg-config gcc-10-aarch64-linux-gnu g++-10-aarch64-linux-gnu -y
+              - Move-Item -Path "${{ github.workspace }}/vcpkg.json" -Destination "${{ github.workspace }}/liboqs"
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -223,10 +188,10 @@ jobs:
 
           - os: macos-latest
             arch: x64
-            install: >-
-              ninja
-            post_install:
-              - 'Move-Item -Path "${{ github.workspace }}/vcpkg.json" -Destination "${{ github.workspace }}/liboqs"'
+            install:
+              - brew update
+              - brew install ninja
+              - Move-Item -Path "${{ github.workspace }}/vcpkg.json" -Destination "${{ github.workspace }}/liboqs"
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -253,13 +218,13 @@ jobs:
         uses: lukka/run-vcpkg@v7
         with:
           setupOnly: true
-          vcpkgDirectory: ${{ github.workspace }}/${{ env.VCPKG_ROOT }}
+          vcpkgDirectory: ${{ github.workspace }}/vcpkg
           appendedCacheKey: ${{ matrix.output_folder }}
-          additionalCachedPaths: ${{ github.workspace }}/${{ env.VCPKG_ROOT }}/vcpkg_installed
+          additionalCachedPaths: ${{ github.workspace }}/vcpkg/vcpkg_installed
 
       - name: Setup NuGet Credentials
         run: |
-          $vcpkg_executable = Join-Path "${{ github.workspace }}" "${{ env.VCPKG_ROOT }}" 'vcpkg'
+          $vcpkg_executable = Join-Path "${{ github.workspace }}" 'vcpkg/vcpkg'
           $mono = "${{ runner.os }}" -eq 'Windows' ? '' : 'mono'
 
           $nuget_executable = @(Invoke-Expression "$vcpkg_executable fetch nuget") | Select-Object -Last 1
@@ -268,43 +233,9 @@ jobs:
       # Install
       - name: Install Program / Dependencies
         run: |
-          if ("${{ runner.os }}" -eq 'Windows')
+          if (![string]::IsNullOrWhiteSpace("${{ join(matrix.install, ' && ') }}"))
           {
-            if (![string]::IsNullOrWhiteSpace("${{ matrix.install }}"))
-            {
-              Invoke-Expression "choco install ${{ matrix.install }} -y"
-            }
-            
-            if (![string]::IsNullOrWhiteSpace("${{ join(matrix.post_install, ' && ') }}"))
-            {
-              Invoke-Expression "${{ join(matrix.post_install, ' && ') }}"
-            }
-          }
-          elseif ("${{ runner.os }}" -eq 'Linux')
-          {
-            if (![string]::IsNullOrWhiteSpace("${{ matrix.install }}"))
-            {
-              sudo apt-get update -y
-              Invoke-Expression "sudo apt-get install ${{ matrix.install }} -y"
-            }
-            
-            if (![string]::IsNullOrWhiteSpace("${{ join(matrix.post_install, ' && ') }}"))
-            {
-              Invoke-Expression "${{ join(matrix.post_install, ' && ') }}"
-            }
-          }
-          elseif ("${{ runner.os }}" -eq 'macOS')
-          {
-            if (![string]::IsNullOrWhiteSpace("${{ matrix.install }}"))
-            {
-              brew update
-              Invoke-Expression "brew install ${{ matrix.install }}"
-            }
-            
-            if (![string]::IsNullOrWhiteSpace("${{ join(matrix.post_install, ' && ') }}"))
-            {
-              Invoke-Expression "${{ join(matrix.post_install, ' && ') }}"
-            }
+            Invoke-Expression "${{ join(matrix.install, ' && ') }}"
           }
 
       - name: Setup msys2 environemnt
