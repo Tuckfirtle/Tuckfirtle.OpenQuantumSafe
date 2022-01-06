@@ -151,7 +151,9 @@ jobs:
             arch: arm
             install:
               - sudo apt-get update -y
-              - sudo apt-get install curl zip unzip tar p7zip-full cmake ninja-build build-essential pkg-config gcc-10-arm-linux-gnueabihf g++-10-arm-linux-gnueabihf -y
+              - sudo apt-get install curl zip unzip tar p7zip-full cmake ninja-build build-essential pkg-config gcc-10 g++-10 gcc-10-arm-linux-gnueabihf g++-10-arm-linux-gnueabihf -y
+              - sudo update-alternatives --install /usr/bin/arm-linux-gnueabihf-gcc arm-linux-gnueabihf-gcc /usr/bin/arm-linux-gnueabihf-gcc-10 999
+              - sudo update-alternatives --install /usr/bin/arm-linux-gnueabihf-g++ arm-linux-gnueabihf-g++ /usr/bin/arm-linux-gnueabihf-g++-10 999
               - New-Item -Path `"${env:VCPKG_CACHE_DIR}`" -ItemType Directory -Force
             liboqs:
               cmake_generator: Ninja
@@ -172,7 +174,9 @@ jobs:
             arch: arm64
             install:
               - sudo apt-get update -y
-              - sudo apt-get install curl zip unzip tar p7zip-full cmake ninja-build build-essential pkg-config gcc-10-aarch64-linux-gnu g++-10-aarch64-linux-gnu -y
+              - sudo apt-get install curl zip unzip tar p7zip-full cmake ninja-build build-essential pkg-config gcc-10 g++-10 gcc-10-aarch64-linux-gnu g++-10-aarch64-linux-gnu -y
+              - sudo update-alternatives --install /usr/bin/aarch64-linux-gnu-gcc aarch64-linux-gnu-gcc /usr/bin/aarch64-linux-gnu-gcc-10 999
+              - sudo update-alternatives --install /usr/bin/aarch64-linux-gnu-g++ aarch64-linux-gnu-g++ /usr/bin/aarch64-linux-gnu-g++-10 999
               - New-Item -Path `"${env:VCPKG_CACHE_DIR}`" -ItemType Directory -Force
             liboqs:
               cmake_generator: Ninja
@@ -246,42 +250,55 @@ jobs:
       # Build liboqs
       - name: Build liboqs
         run: |
+          $cmake_generator = "${{ matrix.liboqs.cmake_generator }}"
+
+          $cmake_build_type = "${{ matrix.liboqs.cmake_build_type }}"
+          $cmake_target_triplet = "${{ matrix.liboqs.cmake_target_triplet }}"
+          $cmake_toolchain_file = "${{ env.CMAKE_TOOLCHAIN_FILE }}"
           $cmake_chainload_toolchain_file = Join-Path "${{ github.workspace }}" "${{ matrix.liboqs.cmake_toolchain_file }}"
+          $cmake_vcpkg_manifest_dir = "${{ env.VCPKG_MANIFEST_DIR }}"
           $cmake_install_prefix = Join-Path "${{ github.workspace }}" "${{ matrix.liboqs.cmake_install_prefix }}"
 
+          $cmake_source_root = "${{ env.CMAKE_SOURCE_ROOT }}"
+          $cmake_build_root = "${{ env.CMAKE_BUILD_ROOT }}"
+          
           if ("${{ runner.os }}" -eq 'Windows')
           {
+            $cmake_toolchain_file = $cmake_toolchain_file.Replace('\', '/')
             $cmake_chainload_toolchain_file = $cmake_chainload_toolchain_file.Replace('\', '/')
+            $cmake_vcpkg_manifest_dir = $cmake_vcpkg_manifest_dir.Replace('\', '/')
             $cmake_install_prefix = $cmake_install_prefix.Replace('\', '/')
+
+            $cmake_source_root = $cmake_source_root.Replace('\', '/')
+            $cmake_build_root = $cmake_build_root.Replace('\', '/')
 
             if ("${{ matrix.liboqs.use_msvc }}" -eq 'true')
             {
-              $msbuild_install_root = Join-Path "${{ env.CMAKE_BUILD_ROOT }}" 'INSTALL.vcxproj'
-              cmd /c "call `"C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\${{ matrix.liboqs.msvc_environment }}.bat`" && cmake -G `"${{ matrix.liboqs.cmake_generator }}`" -DCMAKE_BUILD_TYPE=`"${{ matrix.liboqs.cmake_build_type }}`" -DCMAKE_TOOLCHAIN_FILE=`"${{ env.CMAKE_TOOLCHAIN_FILE }}`" -DVCPKG_TARGET_TRIPLET=`"${{ matrix.liboqs.cmake_target_triplet }}`" -DVCPKG_MANIFEST_DIR=`"${{ env.VCPKG_MANIFEST_DIR }}`" -DCMAKE_INSTALL_PREFIX=`"$cmake_install_prefix`" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -S `"${{ env.CMAKE_SOURCE_ROOT }}`" -B `"${{ env.CMAKE_BUILD_ROOT }}`" && ninja -C `"${{ env.CMAKE_BUILD_ROOT }}`" install"
+              cmd /c "call `"C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\${{ matrix.liboqs.msvc_environment }}.bat`" && cmake -G `"$cmake_generator`" -DCMAKE_BUILD_TYPE=`"$cmake_build_type`" -DCMAKE_TOOLCHAIN_FILE=`"$cmake_toolchain_file`" -DVCPKG_TARGET_TRIPLET=`"$cmake_target_triplet`" -DVCPKG_MANIFEST_DIR=`"$cmake_vcpkg_manifest_dir`" -DCMAKE_INSTALL_PREFIX=`"$cmake_install_prefix`" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -S `"$cmake_source_root`" -B `"$cmake_build_root`" && ninja -C `"$cmake_build_root`" install"
             }
             elseif ("${{ matrix.liboqs.use_msys2 }}" -eq 'true')
             {
               $env:MSYSTEM = "${{ matrix.liboqs.msys2_environment }}"
 
-              msys2 -c "cmake -G `"${{ matrix.liboqs.cmake_generator }}`" -DCMAKE_BUILD_TYPE=`"${{ matrix.liboqs.cmake_build_type}}`" -DCMAKE_TOOLCHAIN_FILE=`"${{ env.CMAKE_TOOLCHAIN_FILE }}`" -DVCPKG_TARGET_TRIPLET=`"${{ matrix.liboqs.cmake_target_triplet}}`" -DVCPKG_MANIFEST_DIR=`"${{ env.VCPKG_MANIFEST_DIR }}`" -DCMAKE_INSTALL_PREFIX=`"$cmake_install_prefix`" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -S `"${{ env.CMAKE_SOURCE_ROOT }}`" -B `"${{ env.CMAKE_BUILD_ROOT }}`""
-              msys2 -c "ninja -C `"${{ env.CMAKE_BUILD_ROOT }}`" install"
+              msys2 -c "cmake -G `"$cmake_generator`" -DCMAKE_BUILD_TYPE=`"$cmake_build_type`" -DCMAKE_TOOLCHAIN_FILE=`"$cmake_toolchain_file`" -DVCPKG_TARGET_TRIPLET=`"$cmake_target_triplet`" -DVCPKG_MANIFEST_DIR=`"$cmake_vcpkg_manifest_dir`" -DCMAKE_INSTALL_PREFIX=`"$cmake_install_prefix`" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -S `"$cmake_source_root`" -B `"$cmake_build_root`""
+              msys2 -c "ninja -C `"$cmake_build_root`" install"
             }
           }
           else
           {
+            $env:CC = "${{ matrix.liboqs.gcc_cc }}"
+            $env:CXX = "${{ matrix.liboqs.gcc_cxx }}"
+
             if (![string]::IsNullOrWhiteSpace("${{ matrix.liboqs.cmake_toolchain_file }}"))
             {
-              cmake -G "${{ matrix.liboqs.cmake_generator }}" -DCMAKE_BUILD_TYPE="${{ matrix.liboqs.cmake_build_type}}" -DCMAKE_TOOLCHAIN_FILE="${{ env.CMAKE_TOOLCHAIN_FILE }}" -DVCPKG_TARGET_TRIPLET="${{ matrix.liboqs.cmake_target_triplet}}" -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$cmake_chainload_toolchain_file" -DVCPKG_MANIFEST_DIR="${{ env.VCPKG_MANIFEST_DIR }}" -DCMAKE_INSTALL_PREFIX="$cmake_install_prefix" -DBUILD_SHARED_LIBS="ON" -DOQS_BUILD_ONLY_LIB="ON" -DOQS_DIST_BUILD="ON" -DOQS_USE_OPENSSL="ON" -S "${{ env.CMAKE_SOURCE_ROOT }}" -B "${{ env.CMAKE_BUILD_ROOT }}"
+              cmake -G "$cmake_generator" -DCMAKE_BUILD_TYPE="$cmake_build_type" -DCMAKE_TOOLCHAIN_FILE="$cmake_toolchain_file" -DVCPKG_TARGET_TRIPLET="$cmake_target_triplet" -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$cmake_chainload_toolchain_file" -DVCPKG_MANIFEST_DIR="$cmake_vcpkg_manifest_dir" -DCMAKE_INSTALL_PREFIX="$cmake_install_prefix" -DBUILD_SHARED_LIBS="ON" -DOQS_BUILD_ONLY_LIB="ON" -DOQS_DIST_BUILD="ON" -DOQS_USE_OPENSSL="ON" -S "$cmake_source_root" -B "$cmake_build_root"
             }
             else
             {
-              $env:CC = "${{ matrix.liboqs.gcc_cc }}"
-              $env:CXX = "${{ matrix.liboqs.gcc_cxx }}"
-
-              cmake -G "${{ matrix.liboqs.cmake_generator }}" -DCMAKE_BUILD_TYPE="${{ matrix.liboqs.cmake_build_type}}" -DCMAKE_TOOLCHAIN_FILE="${{ env.CMAKE_TOOLCHAIN_FILE }}" -DVCPKG_TARGET_TRIPLET="${{ matrix.liboqs.cmake_target_triplet}}" -DVCPKG_MANIFEST_DIR="${{ env.VCPKG_MANIFEST_DIR }}" -DCMAKE_INSTALL_PREFIX="$cmake_install_prefix" -DBUILD_SHARED_LIBS="ON" -DOQS_BUILD_ONLY_LIB="ON" -DOQS_DIST_BUILD="ON" -DOQS_USE_OPENSSL="ON" -S "${{ env.CMAKE_SOURCE_ROOT }}" -B "${{ env.CMAKE_BUILD_ROOT }}"
+              cmake -G "$cmake_generator" -DCMAKE_BUILD_TYPE="$cmake_build_type" -DCMAKE_TOOLCHAIN_FILE="$cmake_toolchain_file" -DVCPKG_TARGET_TRIPLET="$cmake_target_triplet" -DVCPKG_MANIFEST_DIR="$cmake_vcpkg_manifest_dir" -DCMAKE_INSTALL_PREFIX="$cmake_install_prefix" -DBUILD_SHARED_LIBS="ON" -DOQS_BUILD_ONLY_LIB="ON" -DOQS_DIST_BUILD="ON" -DOQS_USE_OPENSSL="ON" -S "$cmake_source_root" -B "$cmake_build_root"
             }
 
-            ninja -C "${{ env.CMAKE_BUILD_ROOT }}" install
+            ninja -C "$cmake_build_root" install
           }
 
       # Package
