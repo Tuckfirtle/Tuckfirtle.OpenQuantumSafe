@@ -96,7 +96,7 @@ jobs:
               cmake_generator: Ninja
               cmake_build_type: Release
               cmake_target_triplet: arm-windows-static
-              cmake_toolchain_file: ""
+              cmake_toolchain_file: cmake/windows-arm.cmake
               cmake_install_prefix: runtimes/win-arm/native
               use_msvc: true
               msvc_environment: vcvarsamd64_arm
@@ -115,7 +115,7 @@ jobs:
               cmake_generator: Ninja
               cmake_build_type: Release
               cmake_target_triplet: arm64-windows-static
-              cmake_toolchain_file: ""
+              cmake_toolchain_file: cmake/windows-arm64.cmake
               cmake_install_prefix: runtimes/win-arm64/native
               use_msvc: true
               msvc_environment: vcvarsamd64_arm64
