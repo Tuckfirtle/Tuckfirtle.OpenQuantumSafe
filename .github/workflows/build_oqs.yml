@@ -276,11 +276,11 @@ jobs:
             {
               if (![string]::IsNullOrWhiteSpace("${{ matrix.liboqs.cmake_toolchain_file }}"))
               {
-                cmd /c "call `"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\${{ matrix.liboqs.msvc_environment }}.bat`" && cmake -G `"$cmake_generator`" -DCMAKE_BUILD_TYPE=`"$cmake_build_type`" -DCMAKE_TOOLCHAIN_FILE=`"$cmake_toolchain_file`" -DVCPKG_TARGET_TRIPLET=`"$cmake_target_triplet`" -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=`"$cmake_chainload_toolchain_file`" -DVCPKG_MANIFEST_DIR=`"$cmake_vcpkg_manifest_dir`" -DCMAKE_INSTALL_PREFIX=`"$cmake_install_prefix`" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -S `"$cmake_source_root`" -B `"$cmake_build_root`" && ninja -C `"$cmake_build_root`" install"
+                cmd /c "call `"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\${{ matrix.liboqs.msvc_environment }}.bat`" && cmake -G `"$cmake_generator`" -DCMAKE_BUILD_TYPE=`"$cmake_build_type`" -DCMAKE_TOOLCHAIN_FILE=`"$cmake_toolchain_file`" -DVCPKG_TARGET_TRIPLET=`"$cmake_target_triplet`" -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=`"$cmake_chainload_toolchain_file`" -DVCPKG_MANIFEST_DIR=`"$cmake_vcpkg_manifest_dir`" -DCMAKE_INSTALL_PREFIX=`"$cmake_install_prefix`" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -DOQS_ENABLE_SIG_SPHINCS=`"OFF`" -S `"$cmake_source_root`" -B `"$cmake_build_root`" && ninja -C `"$cmake_build_root`" install"
               }
               else
               {
-                cmd /c "call `"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\${{ matrix.liboqs.msvc_environment }}.bat`" && cmake -G `"$cmake_generator`" -DCMAKE_BUILD_TYPE=`"$cmake_build_type`" -DCMAKE_TOOLCHAIN_FILE=`"$cmake_toolchain_file`" -DVCPKG_TARGET_TRIPLET=`"$cmake_target_triplet`" -DVCPKG_MANIFEST_DIR=`"$cmake_vcpkg_manifest_dir`" -DCMAKE_INSTALL_PREFIX=`"$cmake_install_prefix`" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -S `"$cmake_source_root`" -B `"$cmake_build_root`" && ninja -C `"$cmake_build_root`" install"
+                cmd /c "call `"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\${{ matrix.liboqs.msvc_environment }}.bat`" && cmake -G `"$cmake_generator`" -DCMAKE_BUILD_TYPE=`"$cmake_build_type`" -DCMAKE_TOOLCHAIN_FILE=`"$cmake_toolchain_file`" -DVCPKG_TARGET_TRIPLET=`"$cmake_target_triplet`" -DVCPKG_MANIFEST_DIR=`"$cmake_vcpkg_manifest_dir`" -DCMAKE_INSTALL_PREFIX=`"$cmake_install_prefix`" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -DOQS_ENABLE_SIG_SPHINCS=`"OFF`" -S `"$cmake_source_root`" -B `"$cmake_build_root`" && ninja -C `"$cmake_build_root`" install"
               }
             }
             elseif ("${{ matrix.liboqs.use_msys2 }}" -eq 'true')
@@ -289,11 +289,11 @@ jobs:
 
               if (![string]::IsNullOrWhiteSpace("${{ matrix.liboqs.cmake_toolchain_file }}"))
               {
-                msys2 -c "cmake -G `"$cmake_generator`" -DCMAKE_BUILD_TYPE=`"$cmake_build_type`" -DCMAKE_TOOLCHAIN_FILE=`"$cmake_toolchain_file`" -DVCPKG_TARGET_TRIPLET=`"$cmake_target_triplet`" -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=`"$cmake_chainload_toolchain_file`" -DVCPKG_MANIFEST_DIR=`"$cmake_vcpkg_manifest_dir`" -DCMAKE_INSTALL_PREFIX=`"$cmake_install_prefix`" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -S `"$cmake_source_root`" -B `"$cmake_build_root`""
+                msys2 -c "cmake -G `"$cmake_generator`" -DCMAKE_BUILD_TYPE=`"$cmake_build_type`" -DCMAKE_TOOLCHAIN_FILE=`"$cmake_toolchain_file`" -DVCPKG_TARGET_TRIPLET=`"$cmake_target_triplet`" -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=`"$cmake_chainload_toolchain_file`" -DVCPKG_MANIFEST_DIR=`"$cmake_vcpkg_manifest_dir`" -DCMAKE_INSTALL_PREFIX=`"$cmake_install_prefix`" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -DOQS_ENABLE_SIG_SPHINCS=`"OFF`" -S `"$cmake_source_root`" -B `"$cmake_build_root`""
               }
               else
               {
-                msys2 -c "cmake -G `"$cmake_generator`" -DCMAKE_BUILD_TYPE=`"$cmake_build_type`" -DCMAKE_TOOLCHAIN_FILE=`"$cmake_toolchain_file`" -DVCPKG_TARGET_TRIPLET=`"$cmake_target_triplet`" -DVCPKG_MANIFEST_DIR=`"$cmake_vcpkg_manifest_dir`" -DCMAKE_INSTALL_PREFIX=`"$cmake_install_prefix`" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -S `"$cmake_source_root`" -B `"$cmake_build_root`""
+                msys2 -c "cmake -G `"$cmake_generator`" -DCMAKE_BUILD_TYPE=`"$cmake_build_type`" -DCMAKE_TOOLCHAIN_FILE=`"$cmake_toolchain_file`" -DVCPKG_TARGET_TRIPLET=`"$cmake_target_triplet`" -DVCPKG_MANIFEST_DIR=`"$cmake_vcpkg_manifest_dir`" -DCMAKE_INSTALL_PREFIX=`"$cmake_install_prefix`" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -DOQS_ENABLE_SIG_SPHINCS=`"OFF`" -S `"$cmake_source_root`" -B `"$cmake_build_root`""
               }
 
                msys2 -c "ninja -C `"$cmake_build_root`" install"
@@ -306,11 +306,11 @@ jobs:
 
             if (![string]::IsNullOrWhiteSpace("${{ matrix.liboqs.cmake_toolchain_file }}"))
             {
-              cmake -G "$cmake_generator" -DCMAKE_BUILD_TYPE="$cmake_build_type" -DCMAKE_TOOLCHAIN_FILE="$cmake_toolchain_file" -DVCPKG_TARGET_TRIPLET="$cmake_target_triplet" -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$cmake_chainload_toolchain_file" -DVCPKG_MANIFEST_DIR="$cmake_vcpkg_manifest_dir" -DCMAKE_INSTALL_PREFIX="$cmake_install_prefix" -DBUILD_SHARED_LIBS="ON" -DOQS_BUILD_ONLY_LIB="ON" -DOQS_DIST_BUILD="ON" -DOQS_USE_OPENSSL="ON" -S "$cmake_source_root" -B "$cmake_build_root"
+              cmake -G "$cmake_generator" -DCMAKE_BUILD_TYPE="$cmake_build_type" -DCMAKE_TOOLCHAIN_FILE="$cmake_toolchain_file" -DVCPKG_TARGET_TRIPLET="$cmake_target_triplet" -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$cmake_chainload_toolchain_file" -DVCPKG_MANIFEST_DIR="$cmake_vcpkg_manifest_dir" -DCMAKE_INSTALL_PREFIX="$cmake_install_prefix" -DBUILD_SHARED_LIBS="ON" -DOQS_BUILD_ONLY_LIB="ON" -DOQS_DIST_BUILD="ON" -DOQS_USE_OPENSSL="ON" -DOQS_ENABLE_SIG_SPHINCS="OFF" -S "$cmake_source_root" -B "$cmake_build_root"
             }
             else
             {
-              cmake -G "$cmake_generator" -DCMAKE_BUILD_TYPE="$cmake_build_type" -DCMAKE_TOOLCHAIN_FILE="$cmake_toolchain_file" -DVCPKG_TARGET_TRIPLET="$cmake_target_triplet" -DVCPKG_MANIFEST_DIR="$cmake_vcpkg_manifest_dir" -DCMAKE_INSTALL_PREFIX="$cmake_install_prefix" -DBUILD_SHARED_LIBS="ON" -DOQS_BUILD_ONLY_LIB="ON" -DOQS_DIST_BUILD="ON" -DOQS_USE_OPENSSL="ON" -S "$cmake_source_root" -B "$cmake_build_root"
+              cmake -G "$cmake_generator" -DCMAKE_BUILD_TYPE="$cmake_build_type" -DCMAKE_TOOLCHAIN_FILE="$cmake_toolchain_file" -DVCPKG_TARGET_TRIPLET="$cmake_target_triplet" -DVCPKG_MANIFEST_DIR="$cmake_vcpkg_manifest_dir" -DCMAKE_INSTALL_PREFIX="$cmake_install_prefix" -DBUILD_SHARED_LIBS="ON" -DOQS_BUILD_ONLY_LIB="ON" -DOQS_DIST_BUILD="ON" -DOQS_USE_OPENSSL="ON" -DOQS_ENABLE_SIG_SPHINCS="OFF" -S "$cmake_source_root" -B "$cmake_build_root"
             }
 
             ninja -C "$cmake_build_root" install
