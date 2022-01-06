@@ -271,14 +271,14 @@ jobs:
           {
             if (![string]::IsNullOrWhiteSpace("${{ matrix.liboqs.cmake_toolchain_file }}"))
             {
-              cmake -G "${{ matrix.liboqs.cmake_generator }}" -DCMAKE_BUILD_TYPE="${{ matrix.liboqs.cmake_build_type}}" -DCMAKE_TOOLCHAIN_FILE="${{ env.CMAKE_TOOLCHAIN_FILE }}" -DVCPKG_TARGET_TRIPLET="${{ matrix.liboqs.cmake_target_triplet}}" -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$cmake_chainload_toolchain_file" -DVCPKG_MANIFEST_DIR=`"${{ env.VCPKG_MANIFEST_DIR }}`" -DCMAKE_INSTALL_PREFIX="$cmake_install_prefix" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -S "${{ env.CMAKE_SOURCE_ROOT }}" -B "${{ env.CMAKE_BUILD_ROOT }}"
+              cmake -G "${{ matrix.liboqs.cmake_generator }}" -DCMAKE_BUILD_TYPE="${{ matrix.liboqs.cmake_build_type}}" -DCMAKE_TOOLCHAIN_FILE="${{ env.CMAKE_TOOLCHAIN_FILE }}" -DVCPKG_TARGET_TRIPLET="${{ matrix.liboqs.cmake_target_triplet}}" -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$cmake_chainload_toolchain_file" -DVCPKG_MANIFEST_DIR="${{ env.VCPKG_MANIFEST_DIR }}" -DCMAKE_INSTALL_PREFIX="$cmake_install_prefix" -DBUILD_SHARED_LIBS="ON" -DOQS_BUILD_ONLY_LIB="ON" -DOQS_DIST_BUILD="ON" -DOQS_USE_OPENSSL="ON" -S "${{ env.CMAKE_SOURCE_ROOT }}" -B "${{ env.CMAKE_BUILD_ROOT }}"
             }
             else
             {
               $env:CC = "${{ matrix.liboqs.gcc_cc }}"
               $env:CXX = "${{ matrix.liboqs.gcc_cxx }}"
 
-              cmake -G "${{ matrix.liboqs.cmake_generator }}" -DCMAKE_BUILD_TYPE="${{ matrix.liboqs.cmake_build_type}}" -DCMAKE_TOOLCHAIN_FILE="${{ env.CMAKE_TOOLCHAIN_FILE }}" -DVCPKG_TARGET_TRIPLET="${{ matrix.liboqs.cmake_target_triplet}}" -DVCPKG_MANIFEST_DIR=`"${{ env.VCPKG_MANIFEST_DIR }}`" -DCMAKE_INSTALL_PREFIX="$cmake_install_prefix" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -S "${{ env.CMAKE_SOURCE_ROOT }}" -B "${{ env.CMAKE_BUILD_ROOT }}"
+              cmake -G "${{ matrix.liboqs.cmake_generator }}" -DCMAKE_BUILD_TYPE="${{ matrix.liboqs.cmake_build_type}}" -DCMAKE_TOOLCHAIN_FILE="${{ env.CMAKE_TOOLCHAIN_FILE }}" -DVCPKG_TARGET_TRIPLET="${{ matrix.liboqs.cmake_target_triplet}}" -DVCPKG_MANIFEST_DIR="${{ env.VCPKG_MANIFEST_DIR }}" -DCMAKE_INSTALL_PREFIX="$cmake_install_prefix" -DBUILD_SHARED_LIBS="ON" -DOQS_BUILD_ONLY_LIB="ON" -DOQS_DIST_BUILD="ON" -DOQS_USE_OPENSSL="ON" -S "${{ env.CMAKE_SOURCE_ROOT }}" -B "${{ env.CMAKE_BUILD_ROOT }}"
             }
 
             ninja -C "${{ env.CMAKE_BUILD_ROOT }}" install
