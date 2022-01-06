@@ -55,12 +55,12 @@ jobs:
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
-              cmake_target_triplet: x64-mingw-static
+              cmake_target_triplet: x64-windows-static
               cmake_toolchain_file: ""
               cmake_install_prefix: runtimes/win-x64/native
-              use_msvc: false
+              use_msvc: true
               msvc_environment: vcvars64
-              use_msys2: true
+              use_msys2: false
               msys2_environment: MINGW64
               msys2_install: >-
                 mingw-w64-x86_64-toolchain
@@ -77,12 +77,12 @@ jobs:
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
-              cmake_target_triplet: x86-mingw-static
+              cmake_target_triplet: x86-windows-static
               cmake_toolchain_file: ""
               cmake_install_prefix: runtimes/win-x86/native
-              use_msvc: false
+              use_msvc: true
               msvc_environment: vcvars32
-              use_msys2: true
+              use_msys2: false
               msys2_environment: MINGW32
               msys2_install: >-
                 mingw-w64-i686-toolchain
