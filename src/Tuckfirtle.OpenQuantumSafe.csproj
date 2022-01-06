@@ -20,7 +20,7 @@
 
 		<Nullable>enable</Nullable>
 
-		<RuntimeIdentifiers>win-x64;win-x86;win-arm;win-arm64;linux-x64;linux-arm;linux-arm64;osx-x64</RuntimeIdentifiers>
+		<RuntimeIdentifiers>win-x64;win-x86;linux-x64;linux-arm;linux-arm64;osx-x64</RuntimeIdentifiers>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="$(Configuration.StartsWith('Debug'))">
@@ -40,12 +40,6 @@
 		</Content>
 		<Content Include="../runtimes/win-x86/native/liboqs.dll" Link="runtimes/win-x86/native/oqs.dll">
 			<PackagePath>runtimes/win-x86/native</PackagePath>
-		</Content>
-		<Content Include="../runtimes/win-arm/native/oqs.dll" Link="runtimes/win-arm/native/oqs.dll">
-			<PackagePath>runtimes/win-arm/native</PackagePath>
-		</Content>
-		<Content Include="../runtimes/win-arm64/native/oqs.dll" Link="runtimes/win-arm64/native/oqs.dll">
-			<PackagePath>runtimes/win-arm64/native</PackagePath>
 		</Content>
 
 		<Content Include="../runtimes/linux-x64/native/liboqs.so.0.7.2-dev" Link="runtimes/linux-x64/native/liboqs.so">
