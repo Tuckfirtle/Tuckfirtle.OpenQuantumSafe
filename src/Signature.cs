@@ -1,236 +1,295 @@
-﻿// Copyright (C) 2020, The Tuckfirtle Developers
+﻿// Copyright (C) 2022, The Tuckfirtle Developers
 // 
 // Please see the included LICENSE file for more information.
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Tuckfirtle.OpenQuantumSafe.Exception;
-using Tuckfirtle.OpenQuantumSafe.Unmanaged;
 
-namespace Tuckfirtle.OpenQuantumSafe
+namespace Tuckfirtle.OpenQuantumSafe;
+
+public class Signature : IDisposable
 {
-    public class Signature : IDisposable
+    private class Native
     {
-        private readonly IntPtr _signatureIntPtr;
-        private readonly UnmanagedSignature _signature;
-
-        public static string[] SupportedMechanism { get; }
-
-        public static string[] EnabledMechanism { get; }
-
-        /// <summary>
-        /// Printable string representing the name of the signature scheme.
-        /// </summary>
-        public string MethodName
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        [SuppressMessage("ReSharper", "InconsistentNaming")]
+        public readonly struct OQS_SIG
         {
-            get
+            /// <summary>
+            /// Printable string representing the name of the signature scheme.
+            /// </summary>
+            public readonly string MethodName;
+
+            /// <summary>
+            /// Printable string representing the version of the cryptographic algorithm.
+            /// </summary>
+            public readonly string Version;
+
+            /// <summary>
+            /// The NIST security level (1, 2, 3, 4, 5) claimed in this algorithm's original NIST submission.
+            /// </summary>
+            public readonly byte ClaimedNistLevel;
+
+            /// <summary>
+            /// Whether the signature offers EUF-CMA security (TRUE) or not (FALSE).
+            /// </summary>
+            [MarshalAs(UnmanagedType.U1)]
+            public readonly bool IsEufCma;
+
+            /// <summary>
+            /// The (maximum) length, in bytes, of public keys for this signature scheme.
+            /// </summary>
+            public readonly nuint PublicKeyLength;
+
+            /// <summary>
+            /// The (maximum) length, in bytes, of secret keys for this signature scheme.
+            /// </summary>
+            public readonly nuint SecretKeyLength;
+
+            /// <summary>
+            /// The (maximum) length, in bytes, of signatures for this signature scheme.
+            /// </summary>
+            public readonly nuint SignatureLength;
+
+            public readonly KeypairDelegate GenerateKeypair;
+
+            public readonly SignDelegate Sign;
+
+            public readonly VerifyDelegate Verify;
+
+            /// <summary>
+            /// Keypair generation algorithm.
+            /// </summary>
+            /// <param name="publicKey">The public key represented as a byte string.</param>
+            /// <param name="secretKey">The secret key represented as a byte string.</param>
+            /// <returns>Success or Error</returns>
+            public delegate Status KeypairDelegate(ref byte publicKey, ref byte secretKey);
+
+            /// <summary>
+            /// Signature generation algorithm.
+            /// </summary>
+            /// <param name="signature">The signature on the message represented as a byte string.</param>
+            /// <param name="signatureLength">The length of the signature.</param>
+            /// <param name="message">The message to sign represented as a byte string.</param>
+            /// <param name="messageLength">The length of the message to sign.</param>
+            /// <param name="secretKey">The secret key represented as a byte string.</param>
+            /// <returns>Success or Error</returns>
+            public delegate Status SignDelegate(ref byte signature, ref nuint signatureLength, in byte message, nuint messageLength, in byte secretKey);
+
+            /// <summary>
+            /// Signature verification algorithm.
+            /// </summary>
+            /// <param name="message">The message represented as a byte string.</param>
+            /// <param name="messageLength">The length of the message.</param>
+            /// <param name="signature">The signature on the message represented as a byte string.</param>
+            /// <param name="signatureLength">The length of the signature.</param>
+            /// <param name="publicKey">The public key represented as a byte string.</param>
+            /// <returns>Success or Error</returns>
+            public delegate Status VerifyDelegate(in byte message, nuint messageLength, in byte signature, nuint signatureLength, in byte publicKey);
+        }
+
+        [DllImport("oqs")]
+        public static extern IntPtr OQS_SIG_alg_identifier(nuint i);
+
+        [DllImport("oqs")]
+        public static extern int OQS_SIG_alg_count();
+
+        [DllImport("oqs", CharSet = CharSet.Ansi)]
+        public static extern int OQS_SIG_alg_is_enabled(string methodName);
+
+        [DllImport("oqs", CharSet = CharSet.Ansi)]
+        public static extern IntPtr OQS_SIG_new(string methodName);
+
+        [DllImport("oqs")]
+        public static extern void OQS_SIG_free(in IntPtr sig);
+    }
+
+    private IntPtr _signaturePtr;
+    private readonly Native.OQS_SIG _signature;
+
+    public static string[] SupportedMechanism { get; }
+
+    public static string[] EnabledMechanism { get; }
+
+    /// <summary>
+    /// Printable string representing the name of the signature scheme.
+    /// </summary>
+    public string MethodName => _signature.MethodName;
+
+    /// <summary>
+    /// Printable string representing the version of the cryptographic algorithm.
+    /// </summary>
+    public string Version => _signature.Version;
+
+    /// <summary>
+    /// The NIST security level (1, 2, 3, 4, 5) claimed in this algorithm's original NIST submission.
+    /// </summary>
+    public byte ClaimedNistLevel => _signature.ClaimedNistLevel;
+
+    /// <summary>
+    /// Whether the signature offers EUF-CMA security (TRUE) or not (FALSE).
+    /// </summary>
+    public bool IsEufCma => _signature.IsEufCma;
+
+    /// <summary>
+    /// The (maximum) length, in bytes, of public keys for this signature scheme.
+    /// </summary>
+    public nuint PublicKeyLength => _signature.PublicKeyLength;
+
+    /// <summary>
+    /// The (maximum) length, in bytes, of secret keys for this signature scheme.
+    /// </summary>
+    public nuint SecretKeyLength => _signature.SecretKeyLength;
+
+    /// <summary>
+    /// The (maximum) length, in bytes, of signatures for this signature scheme.
+    /// </summary>
+    public nuint SignatureLength => _signature.SignatureLength;
+
+    static Signature()
+    {
+        var supportedMechanism = new List<string>();
+        var enabledMechanism = new List<string>();
+
+        var mechanismCount = Native.OQS_SIG_alg_count();
+
+        for (var i = 0; i < mechanismCount; i++)
+        {
+            var mechanismName = Marshal.PtrToStringAnsi(Native.OQS_SIG_alg_identifier((nuint) i));
+            if (mechanismName == null) throw new OpenQuantumSafeException($"{nameof(mechanismName)} is null.");
+
+            supportedMechanism.Add(mechanismName);
+
+            if (Native.OQS_SIG_alg_is_enabled(mechanismName) == 1)
             {
-                if (_signatureIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_signatureIntPtr));
-                return _signature.MethodName;
+                enabledMechanism.Add(mechanismName);
             }
         }
 
-        /// <summary>
-        /// Printable string representing the version of the cryptographic algorithm.
-        /// </summary>
-        public string Version
+        SupportedMechanism = supportedMechanism.ToArray();
+        EnabledMechanism = enabledMechanism.ToArray();
+    }
+
+    public Signature(string signatureAlgorithm)
+    {
+        if (!SupportedMechanism.Contains(signatureAlgorithm)) throw new MechanismNotSupportedException(signatureAlgorithm);
+        if (!EnabledMechanism.Contains(signatureAlgorithm)) throw new MechanismNotEnabledException(signatureAlgorithm);
+
+        _signaturePtr = Native.OQS_SIG_new(signatureAlgorithm);
+        if (_signaturePtr == IntPtr.Zero) throw new OpenQuantumSafeException($"Not enough memory to create {signatureAlgorithm} instance.");
+
+        _signature = Marshal.PtrToStructure<Native.OQS_SIG>(_signaturePtr);
+    }
+
+    ~Signature()
+    {
+        ReleaseUnmanagedResources();
+    }
+
+    /// <summary>
+    /// Keypair generation algorithm.
+    /// </summary>
+    /// <param name="publicKey">The public key represented as a byte string.</param>
+    /// <param name="secretKey">The secret key represented as a byte string.</param>
+    public void GenerateKeypair(out byte[] publicKey, out byte[] secretKey)
+    {
+        if (_signaturePtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(Signature));
+
+        publicKey = new byte[PublicKeyLength];
+        secretKey = new byte[SecretKeyLength];
+
+        var result = _signature.GenerateKeypair(ref Unsafe.AsRef(publicKey[0]), ref Unsafe.AsRef(secretKey[0]));
+        if (result != Status.Success) throw new OpenQuantumSafeException(result);
+    }
+
+    /// <summary>
+    /// Keypair generation algorithm.
+    /// </summary>
+    /// <param name="publicKey">The public key represented as a byte string.</param>
+    /// <param name="secretKey">The secret key represented as a byte string.</param>
+    public void GenerateKeypair(Span<byte> publicKey, Span<byte> secretKey)
+    {
+        if (_signaturePtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(Signature));
+        
+        var result = _signature.GenerateKeypair(ref MemoryMarshal.GetReference(publicKey), ref MemoryMarshal.GetReference(secretKey));
+        if (result != Status.Success) throw new OpenQuantumSafeException(result);
+    }
+
+    /// <summary>
+    /// Signature generation algorithm.
+    /// </summary>
+    /// <param name="signature">The signature on the message represented as a byte string.</param>
+    /// <param name="message">The message to sign represented as a byte string.</param>
+    /// <param name="secretKey">The secret key represented as a byte string.</param>
+    public void Sign(out byte[] signature, ReadOnlySpan<byte> message, ReadOnlySpan<byte> secretKey)
+    {
+        if (_signaturePtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(Signature));
+
+        signature = new byte[SignatureLength];
+        var signatureLength = (nuint) 0;
+
+        var result = _signature.Sign(ref Unsafe.AsRef(signature[0]), ref signatureLength, MemoryMarshal.GetReference(message), (nuint) message.Length, MemoryMarshal.GetReference(secretKey));
+        if (result != Status.Success) throw new OpenQuantumSafeException(result);
+        if (signatureLength == SignatureLength) return;
+
+        Array.Resize(ref signature, (int) signatureLength);
+    }
+
+    /// <summary>
+    /// Signature generation algorithm.
+    /// </summary>
+    /// <param name="signature">The signature on the message represented as a byte string.</param>
+    /// <param name="message">The message to sign represented as a byte string.</param>
+    /// <param name="secretKey">The secret key represented as a byte string.</param>
+    /// <returns>Length of the signature.</returns>
+    public int Sign(Span<byte> signature, ReadOnlySpan<byte> message, ReadOnlySpan<byte> secretKey)
+    {
+        if (_signaturePtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(Signature));
+
+        var signatureLength = (nuint) 0;
+
+        var result = _signature.Sign(ref MemoryMarshal.GetReference(signature), ref signatureLength, MemoryMarshal.GetReference(message), (nuint) message.Length, MemoryMarshal.GetReference(secretKey));
+        if (result != Status.Success) throw new OpenQuantumSafeException(result);
+
+        return (int) signatureLength;
+    }
+
+    /// <summary>
+    /// Signature verification algorithm.
+    /// </summary>
+    /// <param name="message">The message represented as a byte string.</param>
+    /// <param name="signature">The signature on the message represented as a byte string.</param>
+    /// <param name="publicKey">The public key represented as a byte string.</param>
+    /// <returns>Success or Error</returns>
+    public bool Verify(ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature, ReadOnlySpan<byte> publicKey)
+    {
+        if (_signaturePtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(Signature));
+
+        var result = _signature.Verify(MemoryMarshal.GetReference(message), (nuint) message.Length, MemoryMarshal.GetReference(signature), (nuint) signature.Length, MemoryMarshal.GetReference(publicKey));
+
+        return result switch
         {
-            get
-            {
-                if (_signatureIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_signatureIntPtr));
-                return _signature.Version;
-            }
-        }
+            Status.Success => true,
+            Status.Error => false,
+            Status.ExternalLibErrorOpenSsl => false,
+            var _ => throw new ArgumentOutOfRangeException()
+        };
+    }
 
-        /// <summary>
-        /// The NIST security level (1, 2, 3, 4, 5) claimed in this algorithm's original NIST submission.
-        /// </summary>
-        public byte ClaimedNistLevel
-        {
-            get
-            {
-                if (_signatureIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_signatureIntPtr));
-                return _signature.ClaimedNistLevel;
-            }
-        }
+    private void ReleaseUnmanagedResources()
+    {
+        Native.OQS_SIG_free(_signaturePtr);
+        _signaturePtr = IntPtr.Zero;
+    }
 
-        /// <summary>
-        /// Whether the signature offers EUF-CMA security (TRUE) or not (FALSE).
-        /// </summary>
-        public bool IsEufCma
-        {
-            get
-            {
-                if (_signatureIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_signatureIntPtr));
-                return _signature.IsEufCma;
-            }
-        }
-
-        /// <summary>
-        /// The (maximum) length, in bytes, of public keys for this signature scheme.
-        /// </summary>
-        public UIntPtr PublicKeyLength
-        {
-            get
-            {
-                if (_signatureIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_signatureIntPtr));
-                return _signature.PublicKeyLength;
-            }
-        }
-
-        /// <summary>
-        /// The (maximum) length, in bytes, of secret keys for this signature scheme.
-        /// </summary>
-        public UIntPtr SecretKeyLength
-        {
-            get
-            {
-                if (_signatureIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_signatureIntPtr));
-                return _signature.SecretKeyLength;
-            }
-        }
-
-        /// <summary>
-        /// The (maximum) length, in bytes, of signatures for this signature scheme.
-        /// </summary>
-        public UIntPtr SignatureLength
-        {
-            get
-            {
-                if (_signatureIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_signatureIntPtr));
-                return _signature.SignatureLength;
-            }
-        }
-
-        static Signature()
-        {
-            var supportedMechanism = new List<string>();
-            var enabledMechanism = new List<string>();
-
-            var mechanismCount = OQS_SIG_alg_count();
-
-            for (var i = 0; i < mechanismCount; i++)
-            {
-                var mechanismName = Marshal.PtrToStringAnsi(OQS_SIG_alg_identifier(new UIntPtr((uint) i)));
-                if (mechanismName == null) continue;
-
-                supportedMechanism.Add(mechanismName);
-
-                if (OQS_SIG_alg_is_enabled(mechanismName) == 1)
-                {
-                    enabledMechanism.Add(mechanismName);
-                }
-            }
-
-            SupportedMechanism = supportedMechanism.ToArray();
-            EnabledMechanism = enabledMechanism.ToArray();
-        }
-
-        public Signature(string signatureAlgorithm)
-        {
-            if (!SupportedMechanism.Contains(signatureAlgorithm)) throw new MechanismNotSupportedException(signatureAlgorithm);
-            if (!EnabledMechanism.Contains(signatureAlgorithm)) throw new MechanismNotEnabledException(signatureAlgorithm);
-
-            _signatureIntPtr = OQS_SIG_new(signatureAlgorithm);
-
-            if (_signatureIntPtr == IntPtr.Zero) throw new OpenQuantumSafeException("Failed to initialize signature algorithm.");
-
-            _signature = Marshal.PtrToStructure<UnmanagedSignature>(_signatureIntPtr);
-        }
-
-        ~Signature()
-        {
-            ReleaseUnmanagedResources();
-        }
-
-        [DllImport("oqs", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-        private static extern IntPtr OQS_SIG_alg_identifier(UIntPtr i);
-
-        [DllImport("oqs", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-        private static extern int OQS_SIG_alg_count();
-
-        [DllImport("oqs", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-        private static extern int OQS_SIG_alg_is_enabled(string methodName);
-
-        [DllImport("oqs", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-        private static extern IntPtr OQS_SIG_new(string methodName);
-
-        [DllImport("oqs", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-        private static extern void OQS_SIG_free(IntPtr sig);
-
-        /// <summary>
-        /// Keypair generation algorithm.
-        /// </summary>
-        /// <param name="publicKey">The public key represented as a byte string.</param>
-        /// <param name="secretKey">The secret key represented as a byte string.</param>
-        public void GenerateKeypair(out byte[] publicKey, out byte[] secretKey)
-        {
-            if (_signatureIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_signatureIntPtr));
-
-            publicKey = new byte[_signature.PublicKeyLength.ToUInt64()];
-            secretKey = new byte[_signature.SecretKeyLength.ToUInt64()];
-
-            var result = _signature.GenerateKeypair(publicKey, secretKey);
-
-            if (result != Status.Success) throw new OpenQuantumSafeException(result);
-        }
-
-        /// <summary>
-        /// Signature generation algorithm.
-        /// </summary>
-        /// <param name="signature">The signature on the message represented as a byte string.</param>
-        /// <param name="message">The message to sign represented as a byte string.</param>
-        /// <param name="secretKey">The secret key represented as a byte string.</param>
-        public void Sign(out byte[] signature, byte[] message, byte[] secretKey)
-        {
-            if (_signatureIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_signatureIntPtr));
-
-            var resultSignature = new byte[_signature.SignatureLength.ToUInt64()];
-            var signatureLength = new UIntPtr();
-
-            var result = _signature.Sign(resultSignature, ref signatureLength, message, new UIntPtr((ulong) message.LongLength), secretKey);
-
-            if (result != Status.Success) throw new OpenQuantumSafeException(result);
-
-            signature = new byte[signatureLength.ToUInt64()];
-            Buffer.BlockCopy(resultSignature, 0, signature, 0, (int) signatureLength.ToUInt32());
-        }
-
-        /// <summary>
-        /// Signature verification algorithm.
-        /// </summary>
-        /// <param name="message">The message represented as a byte string.</param>
-        /// <param name="signature">The signature on the message represented as a byte string.</param>
-        /// <param name="publicKey">The public key represented as a byte string.</param>
-        /// <returns>Success or Error</returns>
-        public bool Verify(byte[] message, byte[] signature, byte[] publicKey)
-        {
-            if (_signatureIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_signatureIntPtr));
-
-            var result = _signature.Verify(message, new UIntPtr((uint) message.Length), signature, new UIntPtr((uint) signature.Length), publicKey);
-
-            return result switch
-            {
-                Status.Success => true,
-                Status.Error => false,
-                Status.ExternalLibErrorOpenSsl => false,
-                var _ => throw new ArgumentOutOfRangeException()
-            };
-        }
-
-        private void ReleaseUnmanagedResources()
-        {
-            if (_signatureIntPtr == IntPtr.Zero) throw new ObjectDisposedException(nameof(_signatureIntPtr));
-
-            OQS_SIG_free(_signatureIntPtr);
-        }
-
-        public void Dispose()
-        {
-            ReleaseUnmanagedResources();
-            GC.SuppressFinalize(this);
-        }
+    public void Dispose()
+    {
+        ReleaseUnmanagedResources();
+        GC.SuppressFinalize(this);
     }
 }

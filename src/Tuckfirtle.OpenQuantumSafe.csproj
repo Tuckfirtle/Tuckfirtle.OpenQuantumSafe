@@ -1,56 +1,66 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <AssemblyName>Tuckfirtle.OpenQuantumSafe</AssemblyName>
-    <RootNamespace>Tuckfirtle.OpenQuantumSafe</RootNamespace>
-    <TargetFramework>netstandard2.1</TargetFramework>
-    <OutputType>Library</OutputType>
-    <PackageId>Tuckfirtle.OpenQuantumSafe</PackageId>
-    <Version>0.0.1.0</Version>
-    <Authors>Yong Jian Ming</Authors>
-    <Company>Tuckfirtle</Company>
-    <Product>Tuckfirtle.OpenQuantumSafe</Product>
-    <Description>Tuckfirtle open quantum safe wrapper.</Description>
-    <PackageProjectUrl>https://github.com/tuckfirtle/Tuckfirtle.OpenQuantumSafe</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/tuckfirtle/Tuckfirtle.OpenQuantumSafe</RepositoryUrl>
-    <Configurations>Debug_linux;Release_linux;Debug_win;Release_win</Configurations>
-    <Platforms>AnyCPU;x64;x86</Platforms>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<AssemblyName>Tuckfirtle.OpenQuantumSafe</AssemblyName>
+		<RootNamespace>Tuckfirtle.OpenQuantumSafe</RootNamespace>
+		<TargetFramework>net6.0</TargetFramework>
+		<OutputType>Library</OutputType>
 
-  <PropertyGroup Condition="'$(Configuration)'=='Debug_linux' OR '$(Configuration)'=='Debug_win'">
-    <DefineConstants>DEBUG</DefineConstants>
-    <Optimize>false</Optimize>
-    <DebugType>embedded</DebugType>
-  </PropertyGroup>
+		<Configurations>Debug;Release</Configurations>
+		<Platforms>x64;x86;ARM32;ARM64</Platforms>
 
-  <PropertyGroup Condition="'$(Configuration)'=='Release_linux' OR '$(Configuration)'=='Release_win'">
-    <Optimize>true</Optimize>
-    <DebugType>none</DebugType>
-  </PropertyGroup>
+		<PackageId>Tuckfirtle.OpenQuantumSafe</PackageId>
+		<Version>1.0.0.0</Version>
+		<Authors>Yong Jian Ming</Authors>
+		<Company>Tuckfirtle</Company>
+		<Product>Tuckfirtle.OpenQuantumSafe</Product>
+		<Description>Tuckfirtle open quantum safe wrapper.</Description>
+		<PackageProjectUrl>https://github.com/tuckfirtle/Tuckfirtle.OpenQuantumSafe</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/tuckfirtle/Tuckfirtle.OpenQuantumSafe</RepositoryUrl>
 
-  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug_linux|AnyCPU' OR '$(Configuration)|$(Platform)'=='Release_linux|AnyCPU'">
-    <None Include="..\liboqs\out\install\netcore-linux-arm\lib\liboqs.so.0.6.0-dev" Link="liboqs.so">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+		<Nullable>enable</Nullable>
 
-  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug_linux|x64' OR '$(Configuration)|$(Platform)'=='Release_linux|x64'">
-    <None Include="..\liboqs\out\install\netcore-linux-x64\lib\liboqs.so.0.6.0-dev" Link="liboqs.so">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+		<RuntimeIdentifiers>win-x64;win-x86;win-arm;win-arm64;linux-x64;linux-arm;linux-arm64;osx-x64</RuntimeIdentifiers>
+	</PropertyGroup>
 
-  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug_win|x64' OR '$(Configuration)|$(Platform)'=='Release_win|x64'">
-    <None Include="..\liboqs\out\install\netcore-win-x64\bin\oqs.dll" Link="oqs.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+	<PropertyGroup Condition="$(Configuration.StartsWith('Debug'))">
+		<DefineConstants>DEBUG</DefineConstants>
+		<Optimize>false</Optimize>
+		<DebugType>embedded</DebugType>
+	</PropertyGroup>
 
-  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug_win|x86' OR '$(Configuration)|$(Platform)'=='Release_win|x86'">
-    <None Include="..\liboqs\out\install\netcore-win-x86\bin\oqs.dll" Link="oqs.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+	<PropertyGroup Condition="$(Configuration.StartsWith('Release'))">
+		<Optimize>true</Optimize>
+		<DebugType>none</DebugType>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Content Include="../runtimes/win-x64/native/liboqs.dll" Link="runtimes/win-x64/native/oqs.dll">
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</Content>
+		<Content Include="../runtimes/win-x86/native/liboqs.dll" Link="runtimes/win-x86/native/oqs.dll">
+			<PackagePath>runtimes/win-x86/native</PackagePath>
+		</Content>
+		<Content Include="../runtimes/win-arm/native/oqs.dll" Link="runtimes/win-arm/native/oqs.dll">
+			<PackagePath>runtimes/win-arm/native</PackagePath>
+		</Content>
+		<Content Include="../runtimes/win-arm64/native/oqs.dll" Link="runtimes/win-arm64/native/oqs.dll">
+			<PackagePath>runtimes/win-arm64/native</PackagePath>
+		</Content>
+
+		<Content Include="../runtimes/linux-x64/native/liboqs.so.0.7.2-dev" Link="runtimes/linux-x64/native/liboqs.so">
+			<PackagePath>runtimes/linux-x64/native</PackagePath>
+		</Content>
+		<Content Include="../runtimes/linux-arm/native/liboqs.so.0.7.2-dev" Link="runtimes/linux-arm/native/liboqs.so">
+			<PackagePath>runtimes/linux-arm/native</PackagePath>
+		</Content>
+		<Content Include="../runtimes/linux-arm64/native/liboqs.so.0.7.2-dev" Link="runtimes/linux-arm64/native/liboqs.so">
+			<PackagePath>runtimes/linux-arm64/native</PackagePath>
+		</Content>
+
+		<Content Include="../runtimes/osx-x64/native/liboqs.dylib.0.7.2-dev" Link="runtimes/osx-x64/native/liboqs.dylib">
+			<PackagePath>runtimes/osx-x64/native</PackagePath>
+		</Content>
+	</ItemGroup>
 
 </Project>

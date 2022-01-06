@@ -1,0 +1,7 @@
+{
+  "name": "liboqs",
+  "version-string": "0.7.2-dev",
+  "dependencies": [
+    "openssl"
+  ]
+}
