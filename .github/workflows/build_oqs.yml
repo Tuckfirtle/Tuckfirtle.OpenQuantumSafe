@@ -9,6 +9,7 @@ on:
 
 env:
   VCPKG_MANIFEST_DIR: ${{ github.workspace }}
+  VCPKG_CACHE_DIR: ${{ github.workspace }}/vcpkg/vcpkg_installed
   VCPKG_BINARY_SOURCES: clear;nuget,GitHub,readwrite;files,${{ github.workspace }}/vcpkg/vcpkg_installed,readwrite
 
   CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
@@ -45,7 +46,8 @@ jobs:
         include:
           - os: windows-2022
             arch: x64
-            install: []
+            install:
+              - New-Item -Path `"${env:VCPKG_CACHE_DIR}`" -ItemType Directory -Force
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -66,7 +68,8 @@ jobs:
 
           - os: windows-2022
             arch: x86
-            install: []
+            install:
+              - New-Item -Path `"${env:VCPKG_CACHE_DIR}`" -ItemType Directory -Force
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -87,7 +90,8 @@ jobs:
 
           - os: windows-2022
             arch: arm
-            install: []
+            install:
+              - New-Item -Path `"${env:VCPKG_CACHE_DIR}`" -ItemType Directory -Force
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -105,7 +109,8 @@ jobs:
 
           - os: windows-2022
             arch: arm64
-            install: []
+            install:
+              - New-Item -Path `"${env:VCPKG_CACHE_DIR}`" -ItemType Directory -Force
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -126,6 +131,7 @@ jobs:
             install:
               - sudo apt-get update -y
               - sudo apt-get install curl zip unzip tar p7zip-full cmake ninja-build build-essential pkg-config gcc-10 g++-10 -y
+              - New-Item -Path `"${env:VCPKG_CACHE_DIR}`" -ItemType Directory -Force
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -146,6 +152,7 @@ jobs:
             install:
               - sudo apt-get update -y
               - sudo apt-get install curl zip unzip tar p7zip-full cmake ninja-build build-essential pkg-config gcc-10-arm-linux-gnueabihf g++-10-arm-linux-gnueabihf -y
+              - New-Item -Path `"${env:VCPKG_CACHE_DIR}`" -ItemType Directory -Force
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -166,6 +173,7 @@ jobs:
             install:
               - sudo apt-get update -y
               - sudo apt-get install curl zip unzip tar p7zip-full cmake ninja-build build-essential pkg-config gcc-10-aarch64-linux-gnu g++-10-aarch64-linux-gnu -y
+              - New-Item -Path `"${env:VCPKG_CACHE_DIR}`" -ItemType Directory -Force
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -186,6 +194,7 @@ jobs:
             install:
               - brew update
               - brew install ninja
+              - New-Item -Path `"${env:VCPKG_CACHE_DIR}`" -ItemType Directory -Force
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -218,7 +227,6 @@ jobs:
         uses: lukka/run-vcpkg@v10
         with:
           appendedCacheKey: ${{ runner.os }}-${{ matrix.arch }}
-          binaryCachePath: ${{ github.workspace }}/vcpkg/vcpkg_installed
 
       - name: Setup NuGet Credentials
         run: |
