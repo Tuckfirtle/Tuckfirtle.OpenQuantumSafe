@@ -8,10 +8,12 @@ on:
   workflow_dispatch:
 
 env:
+  VCPKG_MANIFEST_DIR: ${{ github.workspace }}
   VCPKG_BINARY_SOURCES: clear;nuget,GitHub,readwrite;files,${{ github.workspace }}/vcpkg/vcpkg_installed,readwrite
-  CMAKE_TOOLCHAIN_FILE: vcpkg/scripts/buildsystems/vcpkg.cmake
-  CMAKE_SOURCE_ROOT: liboqs
-  CMAKE_BUILD_ROOT: build
+
+  CMAKE_TOOLCHAIN_FILE: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+  CMAKE_SOURCE_ROOT: ${{ github.workspace }}/liboqs
+  CMAKE_BUILD_ROOT: ${{ github.workspace }}/build
 
 defaults:
   run:
@@ -23,7 +25,7 @@ concurrency:
 
 jobs:
   build_liboqs:
-    name: Build liboqs (${{ matrix.liboqs.cmake_install_prefix }})
+    name: Build liboqs
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -43,8 +45,7 @@ jobs:
         include:
           - os: windows-2022
             arch: x64
-            install:
-              - Move-Item -Path `"${{ github.workspace }}/vcpkg.json`" -Destination `"${{ github.workspace }}/liboqs`"
+            install: []
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -65,8 +66,7 @@ jobs:
 
           - os: windows-2022
             arch: x86
-            install:
-              - Move-Item -Path `"${{ github.workspace }}/vcpkg.json`" -Destination `"${{ github.workspace }}/liboqs`"
+            install: []
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -87,8 +87,7 @@ jobs:
 
           - os: windows-2022
             arch: arm
-            install:
-              - Move-Item -Path `"${{ github.workspace }}/vcpkg.json`" -Destination `"${{ github.workspace }}/liboqs`"
+            install: []
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -106,8 +105,7 @@ jobs:
 
           - os: windows-2022
             arch: arm64
-            install:
-              - Move-Item -Path `"${{ github.workspace }}/vcpkg.json`" -Destination `"${{ github.workspace }}/liboqs`"
+            install: []
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -128,7 +126,6 @@ jobs:
             install:
               - sudo apt-get update -y
               - sudo apt-get install curl zip unzip tar p7zip-full cmake ninja-build build-essential pkg-config gcc-10 g++-10 -y
-              - Move-Item -Path `"${{ github.workspace }}/vcpkg.json`" -Destination `"${{ github.workspace }}/liboqs`"
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -149,7 +146,6 @@ jobs:
             install:
               - sudo apt-get update -y
               - sudo apt-get install curl zip unzip tar p7zip-full cmake ninja-build build-essential pkg-config gcc-10-arm-linux-gnueabihf g++-10-arm-linux-gnueabihf -y
-              - Move-Item -Path `"${{ github.workspace }}/vcpkg.json`" -Destination `"${{ github.workspace }}/liboqs`"
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -170,7 +166,6 @@ jobs:
             install:
               - sudo apt-get update -y
               - sudo apt-get install curl zip unzip tar p7zip-full cmake ninja-build build-essential pkg-config gcc-10-aarch64-linux-gnu g++-10-aarch64-linux-gnu -y
-              - Move-Item -Path `"${{ github.workspace }}/vcpkg.json`" -Destination `"${{ github.workspace }}/liboqs`"
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -191,7 +186,6 @@ jobs:
             install:
               - brew update
               - brew install ninja
-              - Move-Item -Path `"${{ github.workspace }}/vcpkg.json`" -Destination `"${{ github.workspace }}/liboqs`"
             liboqs:
               cmake_generator: Ninja
               cmake_build_type: Release
@@ -214,29 +208,25 @@ jobs:
         with:
           submodules: recursive
 
+      # Install
+      - name: Install Program / Dependencies
+        if: join(matrix.install, ' && ')
+        run: |
+          Invoke-Expression "${{ join(matrix.install, ' && ') }}"
+
       - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v7
+        uses: lukka/run-vcpkg@v10
         with:
-          setupOnly: true
-          vcpkgDirectory: ${{ github.workspace }}/vcpkg
-          appendedCacheKey: ${{ matrix.output_folder }}
-          additionalCachedPaths: ${{ github.workspace }}/vcpkg/vcpkg_installed
+          appendedCacheKey: ${{ runner.os }}-${{ matrix.arch }}
+          binaryCachePath: ${{ github.workspace }}/vcpkg/vcpkg_installed
 
       - name: Setup NuGet Credentials
         run: |
-          $vcpkg_executable = Join-Path "${{ github.workspace }}" 'vcpkg/vcpkg'
+          $vcpkg_executable = Join-Path "${{ env.VCPKG_ROOT }}" 'vcpkg'
           $mono = "${{ runner.os }}" -eq 'Windows' ? '' : 'mono'
 
           $nuget_executable = @(Invoke-Expression "$vcpkg_executable fetch nuget") | Select-Object -Last 1
           Invoke-Expression "$mono $nuget_executable sources add -source `"https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json`" -storepasswordincleartext -name `"GitHub`" -username `"${{ github.repository_owner }}`" -password `"${{ secrets.GITHUB_TOKEN }}`""
-
-      # Install
-      - name: Install Program / Dependencies
-        run: |
-          if (![string]::IsNullOrWhiteSpace("${{ join(matrix.install, ' && ') }}"))
-          {
-            Invoke-Expression "${{ join(matrix.install, ' && ') }}"
-          }
 
       - name: Setup msys2 environemnt
         uses: msys2/setup-msys2@v2
@@ -248,50 +238,42 @@ jobs:
       # Build liboqs
       - name: Build liboqs
         run: |
-          $cmake_source_root = Join-Path "${{ github.workspace }}" "${{ env.CMAKE_SOURCE_ROOT }}"
-          $cmake_build_root = Join-Path "${{ github.workspace }}" "${{ env.CMAKE_BUILD_ROOT }}"
-
-          $cmake_toolchain_file = Join-Path "${{ github.workspace }}" "${{ env.CMAKE_TOOLCHAIN_FILE }}"
           $cmake_chainload_toolchain_file = Join-Path "${{ github.workspace }}" "${{ matrix.liboqs.cmake_toolchain_file }}"
           $cmake_install_prefix = Join-Path "${{ github.workspace }}" "${{ matrix.liboqs.cmake_install_prefix }}"
 
           if ("${{ runner.os }}" -eq 'Windows')
           {
-            $cmake_source_root = $cmake_source_root.Replace('\', '/')
-            $cmake_build_root = $cmake_build_root.Replace('\', '/')
-
-            $cmake_toolchain_file = $cmake_toolchain_file.Replace('\', '/')
             $cmake_chainload_toolchain_file = $cmake_chainload_toolchain_file.Replace('\', '/')
             $cmake_install_prefix = $cmake_install_prefix.Replace('\', '/')
 
             if ("${{ matrix.liboqs.use_msvc }}" -eq 'true')
             {
-              $msbuild_install_root = Join-Path "$cmake_build_root" 'INSTALL.vcxproj'
-              cmd /c "call `"C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\${{ matrix.liboqs.msvc_environment }}.bat`" && cmake -G `"${{ matrix.liboqs.cmake_generator }}`" -DCMAKE_BUILD_TYPE=`"${{ matrix.liboqs.cmake_build_type }}`" -DCMAKE_TOOLCHAIN_FILE=`"$cmake_toolchain_file`" -DVCPKG_TARGET_TRIPLET=`"${{ matrix.liboqs.cmake_target_triplet }}`" -DCMAKE_INSTALL_PREFIX=`"$cmake_install_prefix`" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -S `"$cmake_source_root`" -B `"$cmake_build_root`" && ninja -C `"$cmake_build_root`" install"
+              $msbuild_install_root = Join-Path "${{ env.CMAKE_BUILD_ROOT }}" 'INSTALL.vcxproj'
+              cmd /c "call `"C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\${{ matrix.liboqs.msvc_environment }}.bat`" && cmake -G `"${{ matrix.liboqs.cmake_generator }}`" -DCMAKE_BUILD_TYPE=`"${{ matrix.liboqs.cmake_build_type }}`" -DCMAKE_TOOLCHAIN_FILE=`"${{ env.CMAKE_TOOLCHAIN_FILE }}`" -DVCPKG_TARGET_TRIPLET=`"${{ matrix.liboqs.cmake_target_triplet }}`" -DVCPKG_MANIFEST_DIR=`"${{ env.VCPKG_MANIFEST_DIR }}`" -DCMAKE_INSTALL_PREFIX=`"$cmake_install_prefix`" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -S `"${{ env.CMAKE_SOURCE_ROOT }}`" -B `"${{ env.CMAKE_BUILD_ROOT }}`" && ninja -C `"${{ env.CMAKE_BUILD_ROOT }}`" install"
             }
             elseif ("${{ matrix.liboqs.use_msys2 }}" -eq 'true')
             {
               $env:MSYSTEM = "${{ matrix.liboqs.msys2_environment }}"
 
-              msys2 -c "cmake -G `"${{ matrix.liboqs.cmake_generator }}`" -DCMAKE_BUILD_TYPE=`"${{ matrix.liboqs.cmake_build_type}}`" -DCMAKE_TOOLCHAIN_FILE=`"$cmake_toolchain_file`" -DVCPKG_TARGET_TRIPLET=`"${{ matrix.liboqs.cmake_target_triplet}}`" -DCMAKE_INSTALL_PREFIX=`"$cmake_install_prefix`" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -S `"$cmake_source_root`" -B `"$cmake_build_root`""
-              msys2 -c "ninja -C `"$cmake_build_root`" install"
+              msys2 -c "cmake -G `"${{ matrix.liboqs.cmake_generator }}`" -DCMAKE_BUILD_TYPE=`"${{ matrix.liboqs.cmake_build_type}}`" -DCMAKE_TOOLCHAIN_FILE=`"${{ env.CMAKE_TOOLCHAIN_FILE }}`" -DVCPKG_TARGET_TRIPLET=`"${{ matrix.liboqs.cmake_target_triplet}}`" -DVCPKG_MANIFEST_DIR=`"${{ env.VCPKG_MANIFEST_DIR }}`" -DCMAKE_INSTALL_PREFIX=`"$cmake_install_prefix`" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -S `"${{ env.CMAKE_SOURCE_ROOT }}`" -B `"${{ env.CMAKE_BUILD_ROOT }}`""
+              msys2 -c "ninja -C `"${{ env.CMAKE_BUILD_ROOT }}`" install"
             }
           }
           else
           {
             if (![string]::IsNullOrWhiteSpace("${{ matrix.liboqs.cmake_toolchain_file }}"))
             {
-              cmake -G "${{ matrix.liboqs.cmake_generator }}" -DCMAKE_BUILD_TYPE="${{ matrix.liboqs.cmake_build_type}}" -DCMAKE_TOOLCHAIN_FILE="$cmake_toolchain_file" -DVCPKG_TARGET_TRIPLET="${{ matrix.liboqs.cmake_target_triplet}}" -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$cmake_chainload_toolchain_file" -DCMAKE_INSTALL_PREFIX="$cmake_install_prefix" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -S "$cmake_source_root" -B "$cmake_build_root"
+              cmake -G "${{ matrix.liboqs.cmake_generator }}" -DCMAKE_BUILD_TYPE="${{ matrix.liboqs.cmake_build_type}}" -DCMAKE_TOOLCHAIN_FILE="${{ env.CMAKE_TOOLCHAIN_FILE }}" -DVCPKG_TARGET_TRIPLET="${{ matrix.liboqs.cmake_target_triplet}}" -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$cmake_chainload_toolchain_file" -DVCPKG_MANIFEST_DIR=`"${{ env.VCPKG_MANIFEST_DIR }}`" -DCMAKE_INSTALL_PREFIX="$cmake_install_prefix" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -S "${{ env.CMAKE_SOURCE_ROOT }}" -B "${{ env.CMAKE_BUILD_ROOT }}"
             }
             else
             {
               $env:CC = "${{ matrix.liboqs.gcc_cc }}"
               $env:CXX = "${{ matrix.liboqs.gcc_cxx }}"
 
-              cmake -G "${{ matrix.liboqs.cmake_generator }}" -DCMAKE_BUILD_TYPE="${{ matrix.liboqs.cmake_build_type}}" -DCMAKE_TOOLCHAIN_FILE="$cmake_toolchain_file" -DVCPKG_TARGET_TRIPLET="${{ matrix.liboqs.cmake_target_triplet}}" -DCMAKE_INSTALL_PREFIX="$cmake_install_prefix" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -S "$cmake_source_root" -B "$cmake_build_root"
+              cmake -G "${{ matrix.liboqs.cmake_generator }}" -DCMAKE_BUILD_TYPE="${{ matrix.liboqs.cmake_build_type}}" -DCMAKE_TOOLCHAIN_FILE="${{ env.CMAKE_TOOLCHAIN_FILE }}" -DVCPKG_TARGET_TRIPLET="${{ matrix.liboqs.cmake_target_triplet}}" -DVCPKG_MANIFEST_DIR=`"${{ env.VCPKG_MANIFEST_DIR }}`" -DCMAKE_INSTALL_PREFIX="$cmake_install_prefix" -DBUILD_SHARED_LIBS=`"ON`" -DOQS_BUILD_ONLY_LIB=`"ON`" -DOQS_DIST_BUILD=`"ON`" -DOQS_USE_OPENSSL=`"ON`" -S "${{ env.CMAKE_SOURCE_ROOT }}" -B "${{ env.CMAKE_BUILD_ROOT }}"
             }
 
-            ninja -C "$cmake_build_root" install
+            ninja -C "${{ env.CMAKE_BUILD_ROOT }}" install
           }
 
       # Package
@@ -302,19 +284,18 @@ jobs:
 
           if ("${{ runner.os }}" -eq 'Windows')
           {
-            Invoke-Expression "7z a -mx=9 `"${{ matrix.liboqs.cmake_target_triplet }}.zip`" ."
+            Invoke-Expression "7z a -mx=9 `"${{ runner.os }}-${{ matrix.arch }}.zip`" ."
           }
           else
           {
-            Invoke-Expression "7z a `"${{ matrix.liboqs.cmake_target_triplet }}.tar`" ."
-            Invoke-Expression "7z a -sdel -mx=9 `"${{ matrix.liboqs.cmake_target_triplet }}.tar.gz`" `"${{ matrix.liboqs.cmake_target_triplet }}.tar`""
+            Invoke-Expression "7z a `"${{ runner.os }}-${{ matrix.arch }}.tar`" ."
+            Invoke-Expression "7z a -sdel -mx=9 `"${{ runner.os }}-${{ matrix.arch }}.tar.gz`" `"${{ runner.os }}-${{ matrix.arch }}.tar`""
           }
 
       # Upload Artifacts
-      - name: Upload Xirorig artifacts
+      - name: Upload liboqs artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ matrix.liboqs.cmake_target_triplet }}
+          name: ${{ runner.os }}-${{ matrix.arch }}
           path: |
             ${{ github.workspace }}/${{ matrix.liboqs.cmake_install_prefix }}/*.*
-            !${{ github.workspace }}/${{ matrix.liboqs.cmake_install_prefix }}/*.tar
